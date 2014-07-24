@@ -7,7 +7,6 @@
   Version: 1.1.1
   Author: Thuantp
   Author URI: #
-  Contributors: Pippin Williamson
  */
 
 
@@ -22,7 +21,7 @@ $number_of_mail_list = 1; // Set number of mail list
 $download_ids_list = array(
     // give the particular Download ID here'
     //Download ID for Mail list 'Easy Pricing Tables Customers'
-    array(429, 9, 430), //62
+    array(429, 9, 430),
     //Download Id for Mail list 'test list'
     array(60, 62, 40)
 );
@@ -35,6 +34,7 @@ $download_plan_names_list = array(
     array('Personal1', 'Bussiness1', 'Agency1')
 );
 
+// @todo replace mailchimp with drip in comments
 // adds an email to the mailchimp subscription list
 function eddcp_subscribe_email_drip($email, $name) {
 
@@ -63,7 +63,7 @@ function eddcp_subscribe_email_drip($email, $name) {
         if (!class_exists('EDDDripApi'))
             require_once(plugin_dir_path(__FILE__) . '/drip/drip.php');
 
-        // push subscribe infor to server        
+        // push subscribe info to server
         foreach ($mail_list_names as $key => $mail_list_name) {
 
             $drip_api = new EDDDripApi();
@@ -76,21 +76,22 @@ function eddcp_subscribe_email_drip($email, $name) {
             );
 
         }
- 
+
 }
 
-// checks whether a user should be signed up for he mailchimp list
+// @todo this doesn't make sense. We don't want to ask the user if he wants to sign up. There doesn't seem to be a need for this function.
+// checks whether a user should be signed up for the mailchimp list
 function eddcp_check_for_email_drip($posted, $user_info) {
 
     $email = $user_info['email'];
     $name = $user_info['first_name'] . ' ' . $user_info['last_name'];
     eddcp_subscribe_email_drip($email, $name);
-
 }
 
 add_action('edd_checkout_before_gateway', 'eddcp_check_for_email_drip', 10, 2);
 
-// checks whether change status to refund
+
+// checks whether the order status changed to refund. If so, call Drip API with "Refunded EPT Personal/Business/Agency"
 function eddcp_refund_subscribe_email($payment_id, $new_status, $old_status) {
 
     global $download_ids_list;
@@ -122,7 +123,7 @@ function eddcp_refund_subscribe_email($payment_id, $new_status, $old_status) {
             }
         }
 
-        // push subscribe infor to server        
+        // push subscribe infor to server
         foreach ($mail_list_names as $key => $mail_list_name) {
             $drip_api = new EDDDripApi();
             $drip_api->add_subscriber(
@@ -135,5 +136,4 @@ function eddcp_refund_subscribe_email($payment_id, $new_status, $old_status) {
         }
     }
 }
-
 add_action('edd_update_payment_status', 'eddcp_refund_subscribe_email', 10, 3);
