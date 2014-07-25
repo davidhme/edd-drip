@@ -27,6 +27,25 @@ class EDDDripApi
                
 	}
 	
+        //update infor of subscriber
+        function update_subscriber($email, $custom_fields = array())
+	{
+		$url = sprintf('/%s/subscribers', $this->api_account_id);
+		$payload = array(
+			'subscribers' => array (
+				array(
+					'email' => $email,
+					'utc_offset' => 660,
+					'custom_fields' => $custom_fields
+				)
+			)
+		);
+		
+	      return	$this->execute_query($url, $payload);
+               
+	}
+        
+        
 	private function execute_query($url_path, $payload = array())
 	{
 		$url = $this->api_url . $url_path;

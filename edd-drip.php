@@ -21,7 +21,7 @@ $number_of_mail_list = 1; // Set number of mail list
 $download_ids_list = array(
     // give the particular Download ID here'
     //Download ID for Mail list 'Easy Pricing Tables Customers'
-    array(429, 9, 430),
+    array(429, 9, 62),
     //Download Id for Mail list 'test list'
     array(60, 62, 40)
 );
@@ -126,7 +126,7 @@ function eddcp_refund_subscribe_email($payment_id, $new_status, $old_status) {
         // push subscribe infor to server
         foreach ($mail_list_names as $key => $mail_list_name) {
             $drip_api = new EDDDripApi();
-            $drip_api->add_subscriber(
+            $drip_api->update_subscriber(
                     $email, 
                     array(
                 'name' => $name,
