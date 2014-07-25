@@ -34,8 +34,8 @@ $download_plan_names_list = array(
     array('Personal1', 'Bussiness1', 'Agency1')
 );
 
-// @todo replace mailchimp with drip in comments
-// adds an email to the mailchimp subscription list
+
+// adds an email to the drip subscription list
 function eddcp_subscribe_email_drip($email, $name) {
 
     global $download_ids_list;
@@ -63,12 +63,12 @@ function eddcp_subscribe_email_drip($email, $name) {
         if (!class_exists('EDDDripApi'))
             require_once(plugin_dir_path(__FILE__) . '/drip/drip.php');
 
-        // push subscribe info to server
+        // push subscribe infor to server
         foreach ($mail_list_names as $key => $mail_list_name) {
 
             $drip_api = new EDDDripApi();
             $result = $drip_api->add_subscriber(
-                    $email, //$current_user->user_email,
+                    $email, 
                     array(
                         'name' => $name,
                         'event' => 'Purchased EPT ' . $plan_names[$key]
@@ -79,8 +79,8 @@ function eddcp_subscribe_email_drip($email, $name) {
 
 }
 
-// @todo this doesn't make sense. We don't want to ask the user if he wants to sign up. There doesn't seem to be a need for this function.
-// checks whether a user should be signed up for the mailchimp list
+
+// checks user infor for subscribing drip list
 function eddcp_check_for_email_drip($posted, $user_info) {
 
     $email = $user_info['email'];
@@ -127,7 +127,7 @@ function eddcp_refund_subscribe_email($payment_id, $new_status, $old_status) {
         foreach ($mail_list_names as $key => $mail_list_name) {
             $drip_api = new EDDDripApi();
             $drip_api->add_subscriber(
-                    $email, //$current_user->user_email,
+                    $email, 
                     array(
                 'name' => $name,
                 'event' => 'Refunded EPT ' . $plan_names[$key]
