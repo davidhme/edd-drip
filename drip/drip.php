@@ -46,6 +46,25 @@ class EDDDripApi
 	}
         
         
+        function fire_event($email, $action,$properties = array())
+	{
+		$url = sprintf('/%s/events', $this->api_account_id);
+		$payload = array(
+			
+			'events' => array (
+				array(
+					'email' => $email,
+					'action' => $action,					
+					'properties' => $properties
+				)
+			)
+		);
+		
+	      return	$this->execute_query($url, $payload);
+               
+	}
+        
+        
 	private function execute_query($url_path, $payload = array())
 	{
 		$url = $this->api_url . $url_path;
