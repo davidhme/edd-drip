@@ -1,135 +1,391 @@
 <?php
 
-/*
-  Plugin Name: Easy Digital Downloads - Drip
-  Plugin URL: http://fatcatapps.com/
-  Description: Include a drip signup option with your Easy Digital Downloads checkout
-  Version: 1.1.1
-  Author: Thuantp
-  Author URI: #
+/**
+ * Plugin Name:     Easy Digital Downloads - Drip
+ * Plugin URI:      http://fatcatapps.com/
+ * Description:     Include a drip signup option with your Easy Digital Downloads checkout
+ * Version:         1.0.0
+ * Author:          David Hehenberger
+ * Author URI:      #
+ *
  */
+// Exit if accessed directly
+if (!defined( 'ABSPATH' ))
+    exit;
 
+if (!class_exists( 'EDD_Drip' )) {
 
-/*
-  |--------------------------------------------------------------------------
-  |  Init data : Number of Mail list , the particular download ID for Plan, Plan Name
-  |--------------------------------------------------------------------------
- */
+    /**
+     * Main EDD_Drip class
+     *
+     * @since       1.0.0
+     */
+    class EDD_Drip {
 
-$number_of_mail_list = 1; // Set number of mail list
+        /**
+         * @var         EDD_Drip $instance The one true EDD_Drip
+         * @since       1.0.0
+         */
+        private static $instance;
 
-$download_ids_list = array(
-    // give the particular Download ID here'
-    //Download ID for Mail list 'Easy Pricing Tables Customers'
-    array(429, 9, 62),
-    //Download Id for Mail list 'test list'
-    array(60, 62, 40)
-);
+        /**
+         * Get active instance
+         *
+         * @access      public
+         * @since       1.0.0
+         * @return      object self::$instance The one true EDD_Drip
+         */
+        public static function instance() {
+            if (!self::$instance) {
+                self::$instance = new EDD_Drip();
+                self::$instance->setup_constants();
+                self::$instance->includes();
+                //We don't have the textdomain yet, so comment this function
+                //self::$instance->load_textdomain ();
+                self::$instance->hooks();
+            }
 
-$download_plan_names_list = array(
-    // give the particular Plan name here'
-    //Plan name for Mail list 'Easy Pricing Tables Customers'
-    array('Personal', 'Bussiness', 'Agency'),
-    //Plan name for Mail list 'test list'
-    array('Personal1', 'Bussiness1', 'Agency1')
-);
+            return self::$instance;
+        }
 
-// adds an email to the drip subscription list
-function eddcp_subscribe_email_drip($email, $name) {
+        /**
+         * Setup plugin constants
+         *
+         * @access      private
+         * @since       1.0.0
+         * @return      void
+         */
+        private function setup_constants() {
+            // Plugin version
+            define( 'EDD_DRIP_VER',
+                    '1.0.0' );
 
-    global $download_ids_list;
-    global $download_plan_names_list;
-    global $number_of_mail_list;
+            // Plugin path
+            define( 'EDD_DRIP_DIR',
+                    plugin_dir_path( __FILE__ ) );
 
-    $number_of_mail_list_in_cart = 0;
-    $mail_list_names = array();
-    $plan_names = array();
-    //get all item in the cart
-    $cart_items = edd_get_cart_contents();
-    foreach ($cart_items as $key => $item) {
+            // Plugin URL
+            define( 'EDD_DRIP_URL',
+                    plugin_dir_url( __FILE__ ) );
+        }
 
-        for ($i = 0; $i < $number_of_mail_list; $i++) {
-            $download_ids = $download_ids_list[$i];
-            if (in_array($item['id'], $download_ids)) {
-                $number_of_mail_list_in_cart++;
-                $mail_list_names[$i] = 'eddcp_list' . $i;
-                $index = array_search($item['id'], $download_ids);
-                $plan_names[$i] = $download_plan_names_list[$i][$index];
+        /**
+         * Include necessary files such as scripts , functions, shortcodes , widgets
+         *
+         * @access      private
+         * @since       1.0.0
+         * @return      void
+         */
+        private function includes() {
+            if (!class_exists( 'EDDDripApi' ))
+                require_once(EDD_DRIP_DIR . 'includes/drip/drip.php');
+        }
+
+        /**
+         * Run action and filter hooks
+         *
+         * @access      private
+         * @since       1.0.0
+         * @return      void
+         *
+         * @todo        The hooks listed in this section are a guideline, and
+         *              may or may not be relevant to your particular extension.
+         *              Please remove any unnecessary lines, and refer to the
+         *              WordPress codex and EDD documentation for additional
+         *              information on the included hooks.
+         *
+         *              This method should be used to add any filters or actions
+         *              that are necessary to the core of your extension only.
+         *              Hooks that are relevant to meta boxes, widgets and
+         *              the like can be placed in their respective files.
+         *
+         *              IMPORTANT! If you are releasing your extension as a
+         *              commercial extension in the EDD store, DO NOT remove
+         *              the license check!
+         */
+        private function hooks() {
+            // Register settings
+            add_filter( 'edd_settings_extensions',
+                    array( $this, 'eddcp_add_drip_settings' ),
+                    1 );
+
+            add_action( 'edd_checkout_before_gateway',
+                    array( $this, 'eddcp_check_for_email_drip' ),
+                    10,
+                    2 );
+
+            add_action( 'edd_update_payment_status',
+                    array( $this, 'eddcp_refund_subscribe_email' ),
+                    10,
+                    3 );
+
+            // Handle licensing
+            // @todo        Replace the Plugin Name and Your Name with your data
+            /* if( class_exists( 'EDD_License' ) ) {
+              $license = new EDD_License( __FILE__, 'Plugin Name', EDD_PLUGIN_NAME_VER, 'Your Name' );
+              } */
+        }
+
+        /**
+         * Internationalization
+         *
+         * @access      public
+         * @since       1.0.0
+         * @return      void
+         */
+        public function load_textdomain() {
+
+            // Set filter for language directory
+            $lang_dir = EDD_DRIP_DIR . '/languages/';
+            $lang_dir = apply_filters( 'edd_plugin_name_languages_directory',
+                    $lang_dir );
+
+            // Traditional WordPress plugin locale filter
+            $locale = apply_filters( 'plugin_locale',
+                    get_locale(),
+                    'edd-drip' );
+            $mofile = sprintf( '%1$s-%2$s.mo',
+                    'edd-drip',
+                    $locale );
+
+            // Setup paths to current locale file
+            $mofile_local = $lang_dir . $mofile;
+            $mofile_global = WP_LANG_DIR . '/edd-drip/' . $mofile;
+
+            if (file_exists( $mofile_global )) {
+                // Look in global /wp-content/languages/edd-plugin-name/ folder
+                load_textdomain( 'edd-drip',
+                        $mofile_global );
+            } elseif (file_exists( $mofile_local )) {
+                // Look in local /wp-content/plugins/edd-plugin-name/languages/ folder
+                load_textdomain( 'edd-drip',
+                        $mofile_local );
+            } else {
+                // Load the default language files
+                load_plugin_textdomain( 'edd-drip',
+                        false,
+                        $lang_dir );
             }
         }
-    }
 
-    if (!class_exists('EDDDripApi'))
-        require_once(plugin_dir_path(__FILE__) . '/drip/drip.php');
+        /**
+         * Add settings
+         *
+         * @access      public
+         * @since       1.0.0
+         * @param       array $settings The existing EDD settings array
+         * @return      array The modified EDD settings array
+         */
+        public function eddcp_add_drip_settings( $settings ) {
 
-    // push subscribe infor to server
-    foreach ($mail_list_names as $key => $mail_list_name) {
+            $eddcp_settings = array(
+                            array(
+                                            'id' => 'eddcp_drip_settings',
+                                            'name' => '<strong>' . __( 'Drip Settings',
+                                                    'eddcp' ) . '</strong>',
+                                            'desc' => __( 'Configure Drip Integration Settings',
+                                                    'eddcp' ),
+                                            'type' => 'header'
+                            ),
+                            array(
+                                            'id' => 'eddcp_drip_api',
+                                            'name' => __( 'Drip API Key',
+                                                    'eddcp' ),
+                                            'desc' => __( 'Enter your Drip API key. This can be found under your Account Settings',
+                                                    'eddcp' ),
+                                            'type' => 'text',
+                                            'size' => 'regular'
+                            ),
+                            array(
+                                            'id' => 'eddcp_drip_account_id',
+                                            'name' => __( 'Drip Account ID',
+                                                    'eddcp' ),
+                                            'desc' => __( 'Enter your Drip Account ID. This can be found under your Account Settings',
+                                                    'eddcp' ),
+                                            'type' => 'text',
+                                            'size' => 'regular'
+                            ),
+            );
 
-        $drip_api = new EDDDripApi();
-        $result = $drip_api->fire_event(
-                $email, 
-                'Purchased EPT ' . $plan_names[$key], 
-                array(
-            'name' => $name,
-                )
-        );
-    }
-}
 
-// checks user infor for subscribing drip list
-function eddcp_check_for_email_drip($posted, $user_info) {
+            //Add select box of Mail list
+            $eddcp_settings[] = array(
+                            'id' => 'eddcp_drip_list',
+                            'name' => __( 'Choose drip list ',
+                                    'eddcp' ),
+                            'desc' => __( 'Select the list you wish to subscribe buyers to',
+                                    'eddcp' ),
+                            'type' => 'select',
+                            'options' => $this->eddcp_drip_get_lists()
+            );
 
-    $email = $user_info['email'];
-    $name = $user_info['first_name'] . ' ' . $user_info['last_name'];
-    eddcp_subscribe_email_drip($email, $name);
-}
 
-add_action('edd_checkout_before_gateway', 'eddcp_check_for_email_drip', 10, 2);
+            return array_merge( $settings,
+                            $eddcp_settings );
+        }
 
-// checks whether the order status changed to refund. If so, call Drip API with "Refunded EPT Personal/Business/Agency"
-function eddcp_refund_subscribe_email($payment_id, $new_status, $old_status) {
+        // get all your mail lists in drip
+        function eddcp_drip_get_lists() {
 
-    global $download_ids_list;
-    global $download_plan_names_list;
-    global $number_of_mail_list;
-    if ($new_status == 'refunded') {
-        if (!class_exists('EDDDripApi'))
-            require_once(plugin_dir_path(__FILE__) . '/drip/drip.php');
+            global $edd_options;
 
-        $meta = get_post_meta($payment_id, '_edd_payment_meta', true);
-        $user_infor = $meta['user_info'];
-        $email = $user_infor['email'];
-        //get all item in the cart
-        $cart_items = $meta['cart_details'];
-        $name = $user_infor['first_name'] . ' ' . $user_infor['last_name'];
-        $mail_list_names = array();
-        $plan_names = array();
-        $number_of_mail_list_in_cart = 0;
-        foreach ($cart_items as $key => $item) {
+            if (empty( $edd_options['eddcp_drip_api'] ) || empty( $edd_options['eddcp_drip_account_id'] )) {
+                return array( );
+            }
+            $drip_api = EDDDripApi::getInstance();
+            $result = json_decode( $drip_api->get_all_lists(),
+                    true );
+            //var_dump($result);
 
-            for ($i = 0; $i < $number_of_mail_list; $i++) {
-                $download_ids = $download_ids_list[$i];
-                if (in_array($item['id'], $download_ids)) {
-                    $number_of_mail_list_in_cart++;
-                    $mail_list_names[$i] = 'eddcp_list' . $i;
-                    $index = array_search($item['id'], $download_ids);
-                    $plan_names[$i] = $download_plan_names_list[$i][$index];
+
+
+            $lists = array( );
+            foreach ($result['campaigns'] as $list) {
+                $lists[$list['id']] = $list['name'];
+            }
+            return $lists;
+        }
+
+        // adds an email to the drip subscription list
+        function eddcp_subscribe_email_drip( $email, $name ) {
+
+            //get all item in the cart
+            $cart_items = edd_get_cart_content_details();
+
+            // push subscribe infor to server
+            $drip_api = EDDDripApi::getInstance();
+
+            $result = json_decode( $drip_api->get_subscribers( $email ),
+                    true );
+
+            $is_not_created = false;
+
+            if (isset( $result['errors'] ) && $result['errors']) {
+                $is_not_created = true;
+                $current_lifetime_value = 0;
+            } else {
+                $subscribers_field = $result['subscribers'][0];
+                $current_lifetime_value = (isset( $subscribers_field['custom_fields']['lifetime_value'] )) ? $subscribers_field['custom_fields']['lifetime_value'] : 0;
+            }
+
+            foreach ($cart_items as $key => $item) {
+                if ($is_not_created) {
+                    $drip_api->add_subscriber( $email,
+                            array(
+                                    'lifetime_value' => $item['price']
+                            )
+                    );
+
+                    $current_lifetime_value +=$item['price'];
+
+                    $drip_api->fire_event(
+                            $email,
+                            'Made a purchase',
+                            array(
+                                    'value' => $item['price'],
+                                    'product_name' => $item['name'],
+                                    'quantity' => $item['quantity']
+                            )
+                    );
+                    $is_not_created = false;
+                } else {
+                    $current_lifetime_value +=$item['price'];
+                    $result = $drip_api->update_subscriber( $email,
+                            array(
+                                    'lifetime_value' => $current_lifetime_value
+                            )
+                    );
+                    $result = $drip_api->fire_event(
+                            $email,
+                            'Made a purchase',
+                            array(
+                                    'value' => $item['price'],
+                                    'product_name' => $item['name'],
+                                    'quantity' => $item['quantity']
+                            )
+                    );
                 }
             }
         }
 
-        // push subscribe infor to server
-        foreach ($mail_list_names as $key => $mail_list_name) {
-            $drip_api = new EDDDripApi();
-            $drip_api->fire_event(
-                    $email,
-                    'Refunded EPT ' . $plan_names[$key],
-                    array(
-                    'name' => $name
-                    )
-            );
+        // checks user infor for subscribing drip list
+        function eddcp_check_for_email_drip( $posted, $user_info ) {
+
+            $email = $user_info['email'];
+            $name = $user_info['first_name'] . ' ' . $user_info['last_name'];
+            $this->eddcp_subscribe_email_drip( $email,
+                    $name );
         }
+
+        // checks whether the order status changed to refund. If so, call Drip API with "Refunded EPT Personal/Business/Agency"
+        function eddcp_refund_subscribe_email( $payment_id, $new_status, $old_status ) {
+
+            if ($new_status == 'refunded') {
+                // push subscribe infor to server
+                $drip_api = EDDDripApi::getInstance();
+
+                $meta = get_post_meta( $payment_id,
+                        '_edd_payment_meta',
+                        true );
+                $user_infor = $meta['user_info'];
+                $email = $user_infor['email'];
+                //get all item in the cart
+                $cart_items = $meta['cart_details'];
+                //$name = $user_infor['first_name'] . ' ' . $user_infor['last_name'];
+
+                $result = json_decode( $drip_api->get_subscribers( $email ),
+                        true );
+
+                $subscribers_field = $result['subscribers'][0];
+                $current_lifetime_value = (isset( $subscribers_field['custom_fields']['lifetime_value'] )) ? $subscribers_field['custom_fields']['lifetime_value'] : 0;
+
+
+                foreach ($cart_items as $key => $item) {
+                    // push subscribe infor to server
+
+                    $current_lifetime_value -=$item['price'];
+                    $drip_api->update_subscriber( $email,
+                            array(
+                                    'lifetime_value' => $current_lifetime_value
+                            )
+                    );
+
+                    $drip_api->fire_event(
+                            $email,
+                            'Refunded',
+                            array(
+                                    'value' => $item['price'],
+                                    'product_name' => $item['name'],
+                                    'quantity' => $item['quantity']
+                            )
+                    );
+                }
+            }
+        }
+
+    }
+
+}
+
+/**
+ * The main function responsible for returning the one true EDD_Drip
+ * instance to functions everywhere
+ *
+ * @since       1.0.0
+ * @return      EDD_Drip The one true EDD_Drip
+ */
+function EDD_Drip_load() {
+    if (!class_exists( 'Easy_Digital_Downloads' )) {
+        if (!class_exists( 'EDD_Extension_Activation' )) {
+            require_once 'includes/class.extension-activation.php';
+        }
+
+        $activation = new EDD_Extension_Activation( plugin_dir_path( __FILE__ ), basename( __FILE__ ) );
+        $activation = $activation->run();
+    } else {
+        return EDD_Drip::instance();
     }
 }
 
-add_action('edd_update_payment_status', 'eddcp_refund_subscribe_email', 10, 3);
+add_action( 'plugins_loaded',
+        'EDD_Drip_load' );
