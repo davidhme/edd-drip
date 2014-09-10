@@ -3,10 +3,10 @@
 /**
  * Plugin Name:     Easy Digital Downloads - Drip
  * Plugin URI:      http://fatcatapps.com/
- * Description:     Include a drip signup option with your Easy Digital Downloads checkout
+ * Description:     Integrates Easy Digital Downloads with the Drip Email Marketing Automation tool.
  * Version:         1.0.0
  * Author:          David Hehenberger
- * Author URI:      #
+ * Author URI:      http://fatcatapps.com/
  *
  */
 // Exit if accessed directly
@@ -183,7 +183,7 @@ if (!class_exists( 'EDD_Drip' )) {
                                             'id' => 'eddcp_drip_settings',
                                             'name' => '<strong>' . __( 'Drip Settings',
                                                     'eddcp' ) . '</strong>',
-                                            'desc' => __( 'Configure Drip Integration Settings',
+                                            'desc' => __( 'Configure Drip Integration Settings.',
                                                     'eddcp' ),
                                             'type' => 'header'
                             ),
@@ -191,7 +191,7 @@ if (!class_exists( 'EDD_Drip' )) {
                                             'id' => 'eddcp_drip_api',
                                             'name' => __( 'Drip API Key',
                                                     'eddcp' ),
-                                            'desc' => __( 'Enter your Drip API key. This can be found under your Account Settings',
+                                            'desc' => __( 'Enter your Drip API key.',
                                                     'eddcp' ),
                                             'type' => 'text',
                                             'size' => 'regular'
@@ -200,7 +200,7 @@ if (!class_exists( 'EDD_Drip' )) {
                                             'id' => 'eddcp_drip_account_id',
                                             'name' => __( 'Drip Account ID',
                                                     'eddcp' ),
-                                            'desc' => __( 'Enter your Drip Account ID. This can be found under your Account Settings',
+                                            'desc' => __( 'Enter your Drip Account ID.',
                                                     'eddcp' ),
                                             'type' => 'text',
                                             'size' => 'regular'
@@ -211,9 +211,9 @@ if (!class_exists( 'EDD_Drip' )) {
             //Add select box of Mail list
             $eddcp_settings[] = array(
                             'id' => 'eddcp_drip_list',
-                            'name' => __( 'Choose drip list ',
+                            'name' => __( 'Campaign',
                                     'eddcp' ),
-                            'desc' => __( 'Select the list you wish to subscribe buyers to',
+                            'desc' => __( 'Select the campaign you wish to subscribe buyers to.',
                                     'eddcp' ),
                             'type' => 'select',
                             'options' => $this->eddcp_drip_get_lists()
