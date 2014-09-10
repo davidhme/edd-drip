@@ -34,8 +34,9 @@ class EDDDripApi {
         $this->api_account_id = ($edd_options['eddcp_drip_account_id']) ? $edd_options['eddcp_drip_account_id'] : '';
         $this->api_campaign = (isset( $edd_options['eddcp_drip_list'] ) && $edd_options['eddcp_drip_list']) ? $edd_options['eddcp_drip_list'] : '';
     }
-
-    function add_subscriber( $email, $custom_fields = array( ) ) {
+    
+    // the subscriber to drip'campain
+    function add_subscriber_to_campain( $email, $custom_fields = array( ) ) {
         $url = sprintf( '/%s/campaigns/%s/subscribers',
                 $this->api_account_id,
                 $this->api_campaign );
@@ -57,8 +58,9 @@ class EDDDripApi {
                         $payload );
     }
 
-    //update infor of subscriber
-    function update_subscriber( $email, $custom_fields = array( ) ) {
+    
+    // add or update infor of subscriber
+    function add_subscriber( $email, $custom_fields = array( ) ) {
         $url = sprintf( '/%s/subscribers',
                 $this->api_account_id );
         $payload = array(

@@ -175,6 +175,19 @@ if (!class_exists( 'EDD_Drip' )) {
          * @since       1.0.0
          * @param       array $settings The existing EDD settings array
          * @return      array The modified EDD settings array
+         * 
+         * //Add select box of campain list
+         *   $eddcp_settings[] = array(
+         *                   'id' => 'eddcp_drip_list',
+         *                   'name' => __( 'Choose drip list ',
+         *                           'eddcp' ),
+         *                   'desc' => __( 'Select the list you wish to subscribe buyers to',
+         *                           'eddcp' ),
+         *                   'type' => 'select',
+         *                   'options' => $this->eddcp_drip_get_lists()
+         *   );
+         * 
+         * 
          */
         public function eddcp_add_drip_settings( $settings ) {
 
@@ -191,7 +204,7 @@ if (!class_exists( 'EDD_Drip' )) {
                                             'id' => 'eddcp_drip_api',
                                             'name' => __( 'Drip API Key',
                                                     'eddcp' ),
-                                            'desc' => __( 'Enter your Drip API key.',
+                                            'desc' => __( ' This can be found under your Account Settings',
                                                     'eddcp' ),
                                             'type' => 'text',
                                             'size' => 'regular'
@@ -200,23 +213,11 @@ if (!class_exists( 'EDD_Drip' )) {
                                             'id' => 'eddcp_drip_account_id',
                                             'name' => __( 'Drip Account ID',
                                                     'eddcp' ),
-                                            'desc' => __( 'Enter your Drip Account ID.',
+                                            'desc' => __( ' This can be found under your Account Settings',
                                                     'eddcp' ),
                                             'type' => 'text',
                                             'size' => 'regular'
                             ),
-            );
-
-
-            //Add select box of Mail list
-            $eddcp_settings[] = array(
-                            'id' => 'eddcp_drip_list',
-                            'name' => __( 'Campaign',
-                                    'eddcp' ),
-                            'desc' => __( 'Select the campaign you wish to subscribe buyers to.',
-                                    'eddcp' ),
-                            'type' => 'select',
-                            'options' => $this->eddcp_drip_get_lists()
             );
 
 
@@ -268,10 +269,11 @@ if (!class_exists( 'EDD_Drip' )) {
                 $current_lifetime_value = (isset( $subscribers_field['custom_fields']['lifetime_value'] )) ? $subscribers_field['custom_fields']['lifetime_value'] : 0;
             }
 
-            foreach ($cart_items as $key => $item) {
+            foreach ($cart_items as $item) {
                 if ($is_not_created) {
                     $drip_api->add_subscriber( $email,
-                            array(
+                            array(  
+                                    'name'        => $name,
                                     'lifetime_value' => $item['price']
                             )
                     );
@@ -290,12 +292,13 @@ if (!class_exists( 'EDD_Drip' )) {
                     $is_not_created = false;
                 } else {
                     $current_lifetime_value +=$item['price'];
-                    $result = $drip_api->update_subscriber( $email,
+                    $drip_api->add_subscriber( $email,
                             array(
+                                    'name'        => $name,         
                                     'lifetime_value' => $current_lifetime_value
                             )
                     );
-                    $result = $drip_api->fire_event(
+                    $drip_api->fire_event(
                             $email,
                             'Made a purchase',
                             array(
@@ -340,11 +343,11 @@ if (!class_exists( 'EDD_Drip' )) {
                 $current_lifetime_value = (isset( $subscribers_field['custom_fields']['lifetime_value'] )) ? $subscribers_field['custom_fields']['lifetime_value'] : 0;
 
 
-                foreach ($cart_items as $key => $item) {
+                foreach ($cart_items as $item) {
                     // push subscribe infor to server
 
                     $current_lifetime_value -=$item['price'];
-                    $drip_api->update_subscriber( $email,
+                    $drip_api->add_subscriber( $email,
                             array(
                                     'lifetime_value' => $current_lifetime_value
                             )
@@ -381,7 +384,7 @@ function EDD_Drip_load() {
         }
 
         $activation = new EDD_Extension_Activation( plugin_dir_path( __FILE__ ), basename( __FILE__ ) );
-        $activation = $activation->run();
+        $activation->run();
     } else {
         return EDD_Drip::instance();
     }
