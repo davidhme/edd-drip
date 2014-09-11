@@ -204,7 +204,7 @@ if (!class_exists( 'EDD_Drip' )) {
                                             'id' => 'eddcp_drip_api',
                                             'name' => __( 'Drip API Key',
                                                     'eddcp' ),
-                                            'desc' => __( ' This can be found under your Account Settings',
+                                            'desc' => __( 'Enter your Drip API Key here.',
                                                     'eddcp' ),
                                             'type' => 'text',
                                             'size' => 'regular'
@@ -213,7 +213,7 @@ if (!class_exists( 'EDD_Drip' )) {
                                             'id' => 'eddcp_drip_account_id',
                                             'name' => __( 'Drip Account ID',
                                                     'eddcp' ),
-                                            'desc' => __( ' This can be found under your Account Settings',
+                                            'desc' => __( 'Enter your Drip Account ID here',
                                                     'eddcp' ),
                                             'type' => 'text',
                                             'size' => 'regular'
