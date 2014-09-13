@@ -55,7 +55,17 @@ If a customer refunds:
 
 For more information, [please refer to this blog post](http://fatcatapps.com/edd-drip).
 
-= Roadmap / Contributors welcome =
+= Getting Started =
+
+Setup takes 2 minutes. After installing the plugin, go to Downloads -> Settings -> Extensions -> Drip Settings and enter your "Drip API Key" and "Drip Account ID". Hit "Save Changes" and you're done.
+
+**What is my Drip API Key?**
+After logging into your Drip dashboard, you'll find your API key under the headline "API Token".
+
+**What is my Drip Account ID?**
+After logging into your Drip dashboard, you can find your account ID in your URL bar. For example, if the URL reads `https://www.getdrip.com/6214935/dashboard` then your account ID = 6214935
+
+= Roadmap / Contributors Welcome =
 
 We're pretty happy with this first version. A possible feature we may add in the future is cart abandonment tracking. If you are interested in improving this plugin / contributing code please [contact us](http://fatcatapps.com/contact/).
 
@@ -63,7 +73,7 @@ We're pretty happy with this first version. A possible feature we may add in the
 
 1. Upload the plugin to the `/wp-content/plugins/` directory
 2. Activate the plugin through the 'Plugins' menu in WordPress
-3. In your sidebar, select 'Opt In Forms -> Add New' to create a new table
+3. Go to Downloads -> Settings -> Extensions -> Drip Settings and enter your "Drip API Key" and "Drip Account ID".
 
 == Changelog ==
 
