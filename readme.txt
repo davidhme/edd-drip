@@ -14,7 +14,7 @@ License URI: http://www.gnu.org/licenses/gpl-2.0.html
 Easy Digital Downloads - Drip integrates the Easy Digital Downloads (EDD) shopping cart with the Drip email marketing automation tool.
 
 == Description ==
-Built  for our own use at [FatcatApps.com](http://fatcatapps.com/), Easy Digital Downloads - Drip integrates two of our favorite tools: [Easy Digital Downloads]https://easydigitaldownloads.com/) and [Drip](https://www.getdrip.com/).
+Built  for our own use at [FatcatApps.com](http://fatcatapps.com/), Easy Digital Downloads - Drip integrates two of our favorite tools: [Easy Digital Downloads](https://easydigitaldownloads.com/) and [Drip](https://www.getdrip.com/).
 
 = Features =
 **1. Purchase Tracking**
