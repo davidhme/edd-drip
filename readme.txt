@@ -4,7 +4,7 @@ Donate link:
 Tags: drip, marketing automation, email, email marketing, edd, easy digital downloads, getdrip, 
 
 Author URI: http://fatcatapps.com/
-Plugin URI: http://fatcatapps.com/edd-drip
+Plugin URI: http://fatcatapps.com/edd-drip/
 Requires at least: 3.9.1
 Tested up to: 4.0
 Stable tag: 1.0
@@ -25,10 +25,10 @@ The plugin also tracks the following properties:
 
 * `value` (Price of the product bought)
 * `product_name` (Name of the product bought)
-* `price_name` (Name of the price_name [if you're using variable pricing])
+* `price_name` (The price_name [if you're using variable pricing])
 
 All in all, the API call to Drip will look like this:
-`{ "events": [{ "email": {email}, "action": "Made a purchase", "properties": { "value": {price}, "product_name": {name} "price_name": {price_name} } }] }`
+`{ "events": [{ "email": {email}, "action": "Made a purchase", "properties": { "value": {price}, "product_name": {name}, "price_name": {price_name} } }] }`
 
 **2. Refund Tracking**
 When a customer refunds (payment status = "Refunded", the following event will be fired:
@@ -41,7 +41,7 @@ The plugin also tracks the following properties:
 * `price_name` (Name of the price_name [if you're using variable pricing])
 
 All in all, the API call to Drip will look like this:
-`{ "events": [{ "email": {email}, "action": "Refunded", "properties": { "value": {price}, "product_name": {name} "price_name": {price_name} } }] }`
+`{ "events": [{ "email": {email}, "action": "Refunded", "properties": { "value": {price}, "product_name": {name}, "price_name": {price_name} } }] }`
 
 **3. Lifetime Value (LTV) Tracking**
 This plugin tracks your customer's lifetime value in a custom field called `lifetime_value`.
@@ -53,21 +53,10 @@ If a customer refunds:
 `lifetime_value-={price}`
 
 
-For more information, [please refer to this blog post](http://fatcatapps.com/edd-drip).
+For more information, [please refer to this blog post](http://fatcatapps.com/edd-drip/).
 
-= Getting Started =
-
-Setup takes 2 minutes. After installing the plugin, go to Downloads -> Settings -> Extensions -> Drip Settings and enter your "Drip API Key" and "Drip Account ID". Hit "Save Changes" and you're done.
-
-**What is my Drip API Key?**
-After logging into your Drip dashboard, you'll find your API key under the headline "API Token".
-
-**What is my Drip Account ID?**
-After logging into your Drip dashboard, you can find your account ID in your URL bar. For example, if the URL reads `https://www.getdrip.com/6214935/dashboard` then your account ID = 6214935
-
-= Roadmap / Contributors Welcome =
-
-We're pretty happy with this first version. A possible feature we may add in the future is cart abandonment tracking. If you are interested in improving this plugin / contributing code please [contact us](http://fatcatapps.com/contact/).
+= Setup =
+Please [go here](http://fatcatapps.com/edd-drip/#setup) to learn how to set up this plugin correctly.
 
 == Installation ==
 

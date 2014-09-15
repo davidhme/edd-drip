@@ -2,7 +2,7 @@
 
 /**
  * Plugin Name:     Easy Digital Downloads - Drip
- * Plugin URI:      http://fatcatapps.com/edd-drip
+ * Plugin URI:      http://fatcatapps.com/edd-drip/
  * Description:     Integrates Easy Digital Downloads with the Drip Email Marketing Automation tool.
  * Version:         1.0
  * Author:          David Hehenberger
