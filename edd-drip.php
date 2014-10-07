@@ -105,19 +105,11 @@ if (!class_exists( 'EDD_Drip' )) {
          */
         private function hooks() {
             // Register settings
-            add_filter( 'edd_settings_extensions',
-                    array( $this, 'eddcp_add_drip_settings' ),
-                    1 );
+            add_filter( 'edd_settings_extensions', array( $this, 'eddcp_add_drip_settings' ), 1 );
 
-            add_action( 'edd_checkout_before_gateway',
-                    array( $this, 'eddcp_check_for_email_drip' ),
-                    10,
-                    2 );
+            add_action( 'edd_complete_purchase', array( $this, 'eddcp_fire_event_drip_after_complete_purchase' ), 10 , 1 );
 
-            add_action( 'edd_update_payment_status',
-                    array( $this, 'eddcp_refund_subscribe_email' ),
-                    10,
-                    3 );
+            add_action( 'edd_update_payment_status', array( $this, 'eddcp_trigger_change_payment_action' ), 10 , 3 );
 
             // Handle licensing
             // @todo        Replace the Plugin Name and Your Name with your data
@@ -246,10 +238,35 @@ if (!class_exists( 'EDD_Drip' )) {
             }
             return $lists;
         }
-
-        // adds an email to the drip subscription list
-        function eddcp_subscribe_email_drip( $email, $name ) {
-
+        
+        /**
+          * - adds an email to the drip subscription list
+          * - change the lifetime_value
+          * - fire event Made a purchase
+          * - The plugin also tracks the following properties:
+          *
+          *          value (Price of the product bought)
+          *          product_name (Name of the product bought)
+          *          price_name (The price_name [if you're using variable pricing]) 
+          * - Lifetime Value (LTV) Tracking This plugin tracks your customer's lifetime value in a custom field called lifetime_value.
+          *
+          *       + If a customer makes a purchase:
+          *             lifetime_value+={price}
+          *       + If a customer refunds:
+          *             lifetime_value-={price} 
+          * 
+          * 
+         */
+        
+        function eddcp_fire_event_drip_after_complete_purchase( $payment_id ) {
+            
+            $meta = get_post_meta( $payment_id,
+                        '_edd_payment_meta',
+                        true );
+            $user_infor = $meta['user_info'];
+            $email = $user_infor['email'];
+            $name = $user_infor['first_name'] . ' ' . $user_infor['last_name'];
+            
             //get all item in the cart
             $cart_items = edd_get_cart_content_details();
 
@@ -310,18 +327,27 @@ if (!class_exists( 'EDD_Drip' )) {
                 }
             }
         }
-
-        // checks user infor for subscribing drip list
-        function eddcp_check_for_email_drip( $posted, $user_info ) {
-
-            $email = $user_info['email'];
-            $name = $user_info['first_name'] . ' ' . $user_info['last_name'];
-            $this->eddcp_subscribe_email_drip( $email,
-                    $name );
-        }
-
-        // checks whether the order status changed to refund. If so, call Drip API with "Refunded EPT Personal/Business/Agency"
-        function eddcp_refund_subscribe_email( $payment_id, $new_status, $old_status ) {
+        
+        /**
+         * 
+         *  - checks whether the order status changed to refund. If so, call Drip API with "Refunded" event
+         *  - checks whether the order status changed to abandoned. If so, call Drip API with "Abandoned cart" event
+         *  - The plugin also tracks the following properties:
+         *
+         *           value (Price of the product bought)
+         *           product_name (Name of the product bought)
+         *           price_name (The price_name [if you're using variable pricing]) 
+         * 
+         *  -Lifetime Value (LTV) Tracking This plugin tracks your customer's lifetime value in a custom field called lifetime_value.
+         *
+         *       + If a customer makes a purchase:
+         *             lifetime_value+={price}
+         *       + If a customer refunds:
+         *             lifetime_value-={price}  
+         * 
+         * 
+         */        
+        function eddcp_trigger_change_payment_action( $payment_id, $new_status, $old_status ) {
 
             if ($new_status == 'refunded') {
                 // push subscribe infor to server
@@ -363,7 +389,33 @@ if (!class_exists( 'EDD_Drip' )) {
                             )
                     );
                 }
-            }
+            } elseif ($new_status == 'abandoned') {
+                
+                // push subscribe infor to server
+                $drip_api = EDDDripApi::getInstance();
+
+                $meta = get_post_meta( $payment_id,
+                        '_edd_payment_meta',
+                        true );
+                $user_infor = $meta['user_info'];
+                $email = $user_infor['email'];
+                //get all item in the cart
+                $cart_items = $meta['cart_details'];
+
+                foreach ($cart_items as $item) {
+                   
+                    $drip_api->fire_event(
+                            $email,
+                            'Abandoned cart',
+                            array(
+                                    'value' => $item['price'],
+                                    'product_name' => $item['name'],
+                                    'price_name' => edd_get_cart_item_price_name( $item )
+                            )
+                    );
+                }                  
+            } 
+            
         }
 
     }
@@ -390,5 +442,4 @@ function EDD_Drip_load() {
     }
 }
 
-add_action( 'plugins_loaded',
-        'EDD_Drip_load' );
+add_action( 'plugins_loaded', 'EDD_Drip_load' );
