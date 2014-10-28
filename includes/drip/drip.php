@@ -141,7 +141,11 @@ class EDDDripApi {
         curl_setopt( $ch,
                 CURLOPT_HTTPHEADER,
                 array( 'Content-Type: application/vnd.api+json' ) );
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
+        
         if (!$isGET) {
+            curl_setopt($ch, CURLOPT_POST, true);
             if (count( $payload ) > 0) {
                 curl_setopt( $ch,
                         CURLOPT_POSTFIELDS,

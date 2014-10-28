@@ -268,7 +268,7 @@ if (!class_exists( 'EDD_Drip' )) {
             $name = $user_infor['first_name'] . ' ' . $user_infor['last_name'];
             
             //get all item in the cart
-            $cart_items = edd_get_cart_content_details();
+            $cart_items = $meta['cart_details'];
 
             // push subscribe infor to server
             $drip_api = EDDDripApi::getInstance();
