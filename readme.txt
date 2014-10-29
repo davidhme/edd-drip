@@ -7,7 +7,7 @@ Author URI: http://fatcatapps.com/
 Plugin URI: http://fatcatapps.com/edd-drip/
 Requires at least: 3.9.1
 Tested up to: 4.0
-Stable tag: 1.2.0.1
+Stable tag: 1.2.0.2
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -65,6 +65,10 @@ Please [go here](http://fatcatapps.com/edd-drip/#setup) to learn how to set up t
 3. Go to Downloads -> Settings -> Extensions -> Drip Settings and enter your "Drip API Key" and "Drip Account ID".
 
 == Changelog ==
+
+= 1.2.0.2 =
+
+* Fix: Purchases weren't tracked properly with some payment gateways (PayPal)
 
 = 1.2.0.1 =
 
