@@ -387,6 +387,12 @@ if (!class_exists( 'EDD_Drip' )) {
                     );
                 }
             } elseif ($new_status == 'abandoned') {
+                $payment = get_post( $payment_id ); 
+                $time_make_payment = strtotime($payment->post_date) ;
+                // if the payment was existed over 30mins , no need to do any thing
+                if( time() - $time_make_payment > 1800 ) {
+                    return;
+                }
                 
                 $infor = $this->get_infor_by_payment_id($payment_id);
                 $email = $infor['email'];
