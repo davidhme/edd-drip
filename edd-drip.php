@@ -47,7 +47,7 @@ if (!class_exists( 'EDD_Drip' )) {
 
             return self::$instance;
         }
-
+              
         /**
          * Setup plugin constants
          *
@@ -104,13 +104,18 @@ if (!class_exists( 'EDD_Drip' )) {
          *              the license check!
          */
         private function hooks() {
+            
+            // define  once_half_hour custom time for cron
+            add_filter( 'cron_schedules', array( $this, 'edd_drip_filter_cron_schedules' ) );
+          
             // Register settings
             add_filter( 'edd_settings_extensions', array( $this, 'eddcp_add_drip_settings' ), 1 );
 
             add_action( 'edd_complete_purchase', array( $this, 'eddcp_fire_event_drip_after_complete_purchase' ), 10 , 1 );
 
             add_action( 'edd_update_payment_status', array( $this, 'eddcp_trigger_change_payment_action' ), 10 , 3 );
-
+            
+            add_action('edd_drip_cron_half_hourly', array($this, 'edd_drip_cron_half_hourly_func'));
             // Handle licensing
             // @todo        Replace the Plugin Name and Your Name with your data
             /* if( class_exists( 'EDD_License' ) ) {
@@ -260,16 +265,12 @@ if (!class_exists( 'EDD_Drip' )) {
         
         function eddcp_fire_event_drip_after_complete_purchase( $payment_id ) {
             
-            $meta = get_post_meta( $payment_id,
-                        '_edd_payment_meta',
-                        true );
-            $user_infor = $meta['user_info'];
-            $email = $user_infor['email'];
-            $name = $user_infor['first_name'] . ' ' . $user_infor['last_name'];
-            
+            $infor = $this->get_infor_by_payment_id($payment_id);
+            $email = $infor['email'];
             //get all item in the cart
-            $cart_items = $meta['cart_details'];
-
+            $cart_items = $infor['cart_items'];
+            $name = $infor['name'];
+            
             // push subscribe infor to server
             $drip_api = EDDDripApi::getInstance();
 
@@ -348,23 +349,19 @@ if (!class_exists( 'EDD_Drip' )) {
          * 
          */        
         function eddcp_trigger_change_payment_action( $payment_id, $new_status, $old_status ) {
-
+            
+            // push subscribe infor to server
+            $drip_api = EDDDripApi::getInstance();
+            
             if ($new_status == 'refunded') {
-                // push subscribe infor to server
-                $drip_api = EDDDripApi::getInstance();
-
-                $meta = get_post_meta( $payment_id,
-                        '_edd_payment_meta',
-                        true );
-                $user_infor = $meta['user_info'];
-                $email = $user_infor['email'];
+                
+                $infor = $this->get_infor_by_payment_id($payment_id);
+                $email = $infor['email'];
                 //get all item in the cart
-                $cart_items = $meta['cart_details'];
-                //$name = $user_infor['first_name'] . ' ' . $user_infor['last_name'];
+                $cart_items = $infor['cart_items'];
 
                 $result = json_decode( $drip_api->get_subscribers( $email ),
                         true );
-
                 $subscribers_field = $result['subscribers'][0];
                 $current_lifetime_value = (isset( $subscribers_field['custom_fields']['lifetime_value'] )) ? $subscribers_field['custom_fields']['lifetime_value'] : 0;
 
@@ -391,17 +388,11 @@ if (!class_exists( 'EDD_Drip' )) {
                 }
             } elseif ($new_status == 'abandoned') {
                 
-                // push subscribe infor to server
-                $drip_api = EDDDripApi::getInstance();
-
-                $meta = get_post_meta( $payment_id,
-                        '_edd_payment_meta',
-                        true );
-                $user_infor = $meta['user_info'];
-                $email = $user_infor['email'];
+                $infor = $this->get_infor_by_payment_id($payment_id);
+                $email = $infor['email'];
                 //get all item in the cart
-                $cart_items = $meta['cart_details'];
-
+                $cart_items = $infor['cart_items'];
+                
                 foreach ($cart_items as $item) {
                    
                     $drip_api->fire_event(
@@ -417,9 +408,90 @@ if (!class_exists( 'EDD_Drip' )) {
             } 
             
         }
+        
+       /**
+        *  get_infor_by_payment_id
+        * @param type $payment_id
+        * @return type
+        */
+       function get_infor_by_payment_id ( $payment_id ) {
+           
+             $meta = get_post_meta( $payment_id,
+                        '_edd_payment_meta',
+                        true );
+              $user_infor = $meta['user_info'];
+              $infor['email'] = $user_infor['email'];
+              $infor['name'] = $user_infor['first_name'] . ' ' . $user_infor['last_name'];
+              //get all item in the cart
+              $infor['cart_items'] = $meta['cart_details'];
+           return $infor;
+       } 
+        
+      /**
+       *  On activation, set up scheduled action hook.
+       */ 
+      function edd_drip_activation() {
 
+             wp_schedule_event( time(), 'edd_once_half_hour', 'edd_drip_cron_half_hourly'  );
+      }
+
+      /**
+       *  On deactivation, remove all functions from the scheduled action hook.
+       */ 
+      function edd_drip_deactivation() {
+
+            wp_clear_scheduled_hook(  'edd_drip_cron_half_hourly'  );
+      }
+
+      // add custom time to cron
+      function edd_drip_filter_cron_schedules( $schedules ) {
+
+             $schedules['edd_once_half_hour'] = array( 
+                         'interval' => 1800, // seconds
+                         'display'  => __( 'Once Half an Hour' ) 
+                      );            
+             return $schedules;
+      }
+        
+        
+      function edd_drip_cron_half_hourly_func() {
+           
+           $now = time();
+           $thirty_mins_before = $now - (30*60);
+           
+           $args = array(
+			'status'     => 'pending',
+			'start_date' => $thirty_mins_before,
+			'end_date'   => $now,
+		);
+
+           $p_query  = new EDD_Payments_Query( $args );
+
+           $payments =  $p_query->get_payments();           
+           
+           foreach ($payments as $payment) {
+                // push subscribe infor to server
+                $drip_api = EDDDripApi::getInstance();
+                $infor = $this->get_infor_by_payment_id($payment->ID);
+                $email = $infor['email'];
+                //get all item in the cart
+                $cart_items = $infor['cart_items'];
+
+                foreach ($cart_items as $item) {
+                   
+                    $drip_api->fire_event(
+                            $email,
+                            'Abandoned cart',
+                            array(
+                                    'value' => $item['price'],
+                                    'product_name' => $item['name'],
+                                    'price_name' => edd_get_cart_item_price_name( $item )
+                            )
+                    );
+                }                                                
+           }  
+       }
     }
-
 }
 
 /**
@@ -437,9 +509,24 @@ function EDD_Drip_load() {
 
         $activation = new EDD_Extension_Activation( plugin_dir_path( __FILE__ ), basename( __FILE__ ) );
         $activation->run();
-    } else {
+    } else {     
         return EDD_Drip::instance();
-    }
+    }    
 }
 
 add_action( 'plugins_loaded', 'EDD_Drip_load' );
+
+// Check if EDD plugin is activated
+if (in_array('easy-digital-downloads/easy-digital-downloads.php', get_option('active_plugins'))) {
+    
+   /**
+    * On activation, set up scheduled action hook.
+    */
+    register_activation_hook( __FILE__, array( EDD_Drip::instance(), 'edd_drip_activation' ) );
+
+    /**
+     * On deactivation, remove all functions from the scheduled action hook.
+     */
+   register_deactivation_hook( __FILE__, array( EDD_Drip::instance(), 'edd_drip_deactivation' ) );
+
+}
