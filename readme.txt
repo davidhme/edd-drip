@@ -6,8 +6,8 @@ Tags: drip, marketing automation, email, email marketing, edd, easy digital down
 Author URI: http://fatcatapps.com/
 Plugin URI: http://fatcatapps.com/edd-drip/
 Requires at least: 3.9.1
-Tested up to: 4.0
-Stable tag: 1.2.0.2
+Tested up to: 4.0.1
+Stable tag: 1.3
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -43,7 +43,20 @@ The plugin also tracks the following properties:
 All in all, the API call to Drip will look like this:
 `{ "events": [{ "email": {email}, "action": "Refunded", "properties": { "value": {price}, "product_name": {name}, "price_name": {price_name} } }] }`
 
-**3. Lifetime Value (LTV) Tracking**
+**3. Cart Abandonment Tracking**
+When a payment's status has been "pending" for at least 30 minutes, or when a payment's status changes to "abaoned", the following event will be fired:
+`Abandoned cart`
+
+The plugin also tracks the following properties:
+
+* `value` (Price of the product bought)
+* `product_name` (Name of the product bought)
+* `price_name` (Name of the price_name [if you're using variable pricing])
+
+All in all, the API call to Drip will look like this:
+`{ "events": [{ "email": {email}, "action": "Refunded", "properties": { "value": {price}, "product_name": {name}, "price_name": {price_name} } }] }`
+
+**4. Lifetime Value (LTV) Tracking**
 This plugin tracks your customer's lifetime value in a custom field called `lifetime_value`.
 
 If a customer makes a purchase:
@@ -65,6 +78,11 @@ Please [go here](http://fatcatapps.com/edd-drip/#setup) to learn how to set up t
 3. Go to Downloads -> Settings -> Extensions -> Drip Settings and enter your "Drip API Key" and "Drip Account ID".
 
 == Changelog ==
+
+= 1.3 =
+
+* Changed behavoir of "Abandoned" - event. "Abandoned Cart" will be triggered if the payment status is pending for at least 30 minutes.
+
 
 = 1.2.0.2 =
 
