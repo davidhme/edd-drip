@@ -1,7 +1,7 @@
 === Easy Digital Downloads - Drip ===
 Contributors: davidhme, fatcatapps
 Donate link: 
-Tags: drip, marketing automation, email, email marketing, edd, easy digital downloads, getdrip, 
+Tags: drip, marketing automation, email, email marketing, edd, easy digital downloads, getdrip, cart abandonment
 
 Author URI: http://fatcatapps.com/
 Plugin URI: http://fatcatapps.com/edd-drip/
@@ -44,13 +44,13 @@ All in all, the API call to Drip will look like this:
 `{ "events": [{ "email": {email}, "action": "Refunded", "properties": { "value": {price}, "product_name": {name}, "price_name": {price_name} } }] }`
 
 **3. Cart Abandonment Tracking**
-When a payment's status has been "pending" for at least 30 minutes, or when a payment's status changes to "abaoned", the following event will be fired:
+When a payment's status has been "pending" for at least 30 minutes, or when a payment's status changes to "abandoned", the following event will be fired:
 `Abandoned cart`
 
 The plugin also tracks the following properties:
 
-* `value` (Price of the product bought)
-* `product_name` (Name of the product bought)
+* `value` (Price of the product)
+* `product_name` (Name of the product)
 * `price_name` (Name of the price_name [if you're using variable pricing])
 
 All in all, the API call to Drip will look like this:
