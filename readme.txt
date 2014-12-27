@@ -7,7 +7,7 @@ Author URI: http://fatcatapps.com/
 Plugin URI: http://fatcatapps.com/edd-drip/
 Requires at least: 3.9.1
 Tested up to: 4.0.1
-Stable tag: 1.3
+Stable tag: 1.3.1
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -82,7 +82,6 @@ Please [go here](http://fatcatapps.com/edd-drip/#setup) to learn how to set up t
 = 1.3.1 =
 
 * Removed quantity value for the "Made a Purchase" event
-
 
 = 1.3 =
 
