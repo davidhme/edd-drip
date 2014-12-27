@@ -304,7 +304,7 @@ if (!class_exists( 'EDD_Drip' )) {
                             array(
                                     'value' => $item['price'],
                                     'product_name' => $item['name'],
-                                    'quantity' => $item['quantity']
+                                    'price_name' => edd_get_cart_item_price_name( $item )
                             )
                     );
                     $is_not_created = false;
