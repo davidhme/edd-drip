@@ -79,6 +79,11 @@ Please [go here](http://fatcatapps.com/edd-drip/#setup) to learn how to set up t
 
 == Changelog ==
 
+= 1.3.1 =
+
+* Removed quantity value for the "Made a Purchase" event
+
+
 = 1.3 =
 
 * Changed behavoir of "Abandoned" - event. "Abandoned Cart" will be triggered if the payment status is pending for at least 30 minutes.
