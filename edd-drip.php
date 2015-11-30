@@ -267,9 +267,11 @@ if (!class_exists( 'EDD_Drip' )) {
             
             $infor = $this->get_infor_by_payment_id($payment_id);
             $email = $infor['email'];
+            $first_name = $infor['first_name'];
             //get all item in the cart
             $cart_items = $infor['cart_items'];
             $name = $infor['name'];
+            $is_renewal = $infor['is_renewal'];
             
             // push subscribe infor to server
             $drip_api = EDDDripApi::getInstance();
@@ -287,10 +289,12 @@ if (!class_exists( 'EDD_Drip' )) {
                 $current_lifetime_value = (isset( $subscribers_field['custom_fields']['lifetime_value'] )) ? $subscribers_field['custom_fields']['lifetime_value'] : 0;
             }
 
+
             foreach ($cart_items as $item) {
                 if ($is_not_created) {
                     $drip_api->add_subscriber( $email,
-                            array(  
+                            array(
+                                    'first_name'  => $first_name,
                                     'name'        => $name,
                                     'lifetime_value' => $item['price']
                             )
@@ -304,7 +308,8 @@ if (!class_exists( 'EDD_Drip' )) {
                             array(
                                     'value' => $item['price'],
                                     'product_name' => $item['name'],
-                                    'price_name' => edd_get_cart_item_price_name( $item )
+                                    'quantity' => $item['quantity'],
+                                    'is_renewal' => $is_renewal
                             )
                     );
                     $is_not_created = false;
@@ -312,6 +317,7 @@ if (!class_exists( 'EDD_Drip' )) {
                     $current_lifetime_value +=$item['price'];
                     $drip_api->add_subscriber( $email,
                             array(
+                                    'first_name'        => $first_name,
                                     'name'        => $name,         
                                     'lifetime_value' => $current_lifetime_value
                             )
@@ -322,7 +328,8 @@ if (!class_exists( 'EDD_Drip' )) {
                             array(
                                     'value' => $item['price'],
                                     'product_name' => $item['name'],
-                                    'price_name' => edd_get_cart_item_price_name( $item )
+                                    'price_name' => edd_get_cart_item_price_name( $item ),
+                                    'is_renewal' => $is_renewal
                             )
                     );
                 }
@@ -421,7 +428,7 @@ if (!class_exists( 'EDD_Drip' )) {
         * @return type
         */
        function get_infor_by_payment_id ( $payment_id ) {
-           
+
              $meta = get_post_meta( $payment_id,
                         '_edd_payment_meta',
                         true );
@@ -430,6 +437,8 @@ if (!class_exists( 'EDD_Drip' )) {
               $infor['name'] = $user_infor['first_name'] . ' ' . $user_infor['last_name'];
               //get all item in the cart
               $infor['cart_items'] = $meta['cart_details'];
+              $infor['is_renewal'] = (bool) get_post_meta( $payment_id, '_edd_sl_is_renewal', true );
+
            return $infor;
        } 
         
