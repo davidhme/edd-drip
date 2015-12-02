@@ -6,8 +6,8 @@ Tags: drip, marketing automation, email, email marketing, edd, easy digital down
 Author URI: http://fatcatapps.com/
 Plugin URI: http://fatcatapps.com/edd-drip/
 Requires at least: 3.9.1
-Tested up to: 4.0.1
-Stable tag: 1.3.1
+Tested up to: 4.4
+Stable tag: 1.4.0
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -68,6 +68,11 @@ If a customer refunds:
 
 For more information, [please refer to this blog post](http://fatcatapps.com/edd-drip/).
 
+= Contributors Welcome =
+Thanks to [Chris Simmons from WP BackItUp](https://www.wpbackitup.com/) for making version 1.4.0 possible.
+
+Do you want to see further improvements? Please consider contributing. You can submit a pull request here: https://github.com/davidhme/edd-drip
+
 = Setup =
 Please [go here](http://fatcatapps.com/edd-drip/#setup) to learn how to set up this plugin correctly.
 
@@ -78,6 +83,13 @@ Please [go here](http://fatcatapps.com/edd-drip/#setup) to learn how to set up t
 3. Go to Downloads -> Settings -> Extensions -> Drip Settings and enter your "Drip API Key" and "Drip Account ID".
 
 == Changelog ==
+
+= 1.4.0 = 
+
+* Added first name to drip properties: This is useful for outbound emails vs full name
+
+* Added is_renewal to event: This is useful for segmenting renewal customers from new purchases.
+
 
 = 1.3.1 =
 
