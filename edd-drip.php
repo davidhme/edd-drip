@@ -434,6 +434,7 @@ if (!class_exists( 'EDD_Drip' )) {
                         true );
               $user_infor = $meta['user_info'];
               $infor['email'] = $user_infor['email'];
+              $infor['first_name'] = $user_infor['first_name'];
               $infor['name'] = $user_infor['first_name'] . ' ' . $user_infor['last_name'];
               //get all item in the cart
               $infor['cart_items'] = $meta['cart_details'];
