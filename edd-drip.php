@@ -308,6 +308,7 @@ if (!class_exists( 'EDD_Drip' )) {
                             array(
                                     'value' => $item['price'],
                                     'product_name' => $item['name'],
+                                    'price_name' => edd_get_cart_item_price_name( $item ),
                                     'quantity' => $item['quantity'],
                                     'is_renewal' => $is_renewal
                             )
@@ -329,6 +330,7 @@ if (!class_exists( 'EDD_Drip' )) {
                                     'value' => $item['price'],
                                     'product_name' => $item['name'],
                                     'price_name' => edd_get_cart_item_price_name( $item ),
+                                    'quantity' => $item['quantity'],
                                     'is_renewal' => $is_renewal
                             )
                     );
