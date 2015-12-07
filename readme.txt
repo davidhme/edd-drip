@@ -7,7 +7,7 @@ Author URI: http://fatcatapps.com/
 Plugin URI: http://fatcatapps.com/edd-drip/
 Requires at least: 3.9.1
 Tested up to: 4.4
-Stable tag: 1.4.0
+Stable tag: 1.4.1
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -69,7 +69,7 @@ If a customer refunds:
 For more information, [please refer to this blog post](http://fatcatapps.com/edd-drip/).
 
 = Contributors Welcome =
-Thanks to [Chris Simmons from WP BackItUp](https://www.wpbackitup.com/) for making version 1.4.0 possible.
+Thanks to [Chris Simmons from WP BackItUp](https://www.wpbackitup.com/) and [Phil Derksen from WP Simple Pay for Stripe](https://wpsimplepay.com/) for contributing.
 
 Do you want to see further improvements? Please consider contributing. You can submit a pull request here: https://github.com/davidhme/edd-drip
 
@@ -83,6 +83,12 @@ Please [go here](http://fatcatapps.com/edd-drip/#setup) to learn how to set up t
 3. Go to Downloads -> Settings -> Extensions -> Drip Settings and enter your "Drip API Key" and "Drip Account ID".
 
 == Changelog ==
+
+= 1.4.1 -
+
+* Fix: A bug in 1.4.0 removed `price_name` from the `Made a purchase` event
+
+* Fix: `first_name` custom field didn't get saved.
 
 = 1.4.0 = 
 
