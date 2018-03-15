@@ -4,7 +4,7 @@
  * Plugin Name:     Easy Digital Downloads - Drip
  * Plugin URI:      http://fatcatapps.com/edd-drip/
  * Description:     Integrates Easy Digital Downloads with the Drip Email Marketing Automation tool.
- * Version:         1.4.1
+ * Version:         1.4.2
  * Author:          Fatcat Apps
  * Author URI:      http://fatcatapps.com/
  *
@@ -109,6 +109,8 @@ if (!class_exists( 'EDD_Drip' )) {
             add_filter( 'cron_schedules', array( $this, 'edd_drip_filter_cron_schedules' ) );
           
             // Register settings
+	        add_filter( 'edd_settings_sections_extensions', array( $this, 'eddcp_settings_section' ), 1 );
+
             add_filter( 'edd_settings_extensions', array( $this, 'eddcp_add_drip_settings' ), 1 );
 
             add_action( 'edd_complete_purchase', array( $this, 'eddcp_fire_event_drip_after_complete_purchase' ), 10 , 1 );
@@ -165,6 +167,16 @@ if (!class_exists( 'EDD_Drip' )) {
             }
         }
 
+	    /**
+	     * Register the settings section
+	     *
+	     * @return array
+	     */
+	    function eddcp_settings_section( $sections ) {
+		    $sections['ck-settings'] = __( 'Drip Settings', 'eddcp' );
+		    return $sections;
+	    }
+
         /**
          * Add settings
          *
@@ -217,6 +229,10 @@ if (!class_exists( 'EDD_Drip' )) {
                             ),
             );
 
+	        // If EDD is at version 2.5 or later...
+	        if ( version_compare( EDD_VERSION, 2.5, '>=' ) ) {
+		        $eddcp_settings = array( 'ck-settings' => $eddcp_settings );
+	        }
 
             return array_merge( $settings,
                             $eddcp_settings );
@@ -306,7 +322,7 @@ if (!class_exists( 'EDD_Drip' )) {
                             $email,
                             'Made a purchase',
                             array(
-                                    'value' => $item['price'],
+                                    'value' => (int) $item['price'],
                                     'product_name' => $item['name'],
                                     'price_name' => edd_get_cart_item_price_name( $item ),
                                     'quantity' => $item['quantity'],
@@ -323,17 +339,19 @@ if (!class_exists( 'EDD_Drip' )) {
                                     'lifetime_value' => $current_lifetime_value
                             )
                     );
-                    $drip_api->fire_event(
+                    $response = $drip_api->fire_event(
                             $email,
                             'Made a purchase',
                             array(
-                                    'value' => $item['price'],
+                                    'value' => (int) $item['price'],
                                     'product_name' => $item['name'],
                                     'price_name' => edd_get_cart_item_price_name( $item ),
                                     'quantity' => $item['quantity'],
                                     'is_renewal' => $is_renewal
                             )
                     );
+
+                    //error_log('purchase response:' . var_export($response,true));
                 }
             }
         }
@@ -389,7 +407,7 @@ if (!class_exists( 'EDD_Drip' )) {
                             $email,
                             'Refunded',
                             array(
-                                    'value' => $item['price'],
+                                    'value' => (int) $item['price'],
                                     'product_name' => $item['name'],
                                     'price_name' => edd_get_cart_item_price_name( $item )
                             )
@@ -414,7 +432,7 @@ if (!class_exists( 'EDD_Drip' )) {
                             $email,
                             'Abandoned cart',
                             array(
-                                    'value' => $item['price'],
+                                    'value' => (int) $item['price'],
                                     'product_name' => $item['name'],
                                     'price_name' => edd_get_cart_item_price_name( $item )
                             )
@@ -501,7 +519,7 @@ if (!class_exists( 'EDD_Drip' )) {
                             $email,
                             'Abandoned cart',
                             array(
-                                    'value' => $item['price'],
+                                    'value' => (int) $item['price'],
                                     'product_name' => $item['name'],
                                     'price_name' => edd_get_cart_item_price_name( $item )
                             )

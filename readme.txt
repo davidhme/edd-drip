@@ -1,12 +1,12 @@
 === Easy Digital Downloads - Drip ===
-Contributors: davidhme, fatcatapps
+Contributors: davidhme, fatcatapps, cssimmon
 Donate link: 
 Tags: drip, marketing automation, email, email marketing, edd, easy digital downloads, getdrip, cart abandonment
 
 Author URI: http://fatcatapps.com/
 Plugin URI: http://fatcatapps.com/edd-drip/
 Requires at least: 3.9.1
-Tested up to: 4.4
+Tested up to: 4.9
 Stable tag: 1.4.1
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
@@ -83,6 +83,14 @@ Please [go here](http://fatcatapps.com/edd-drip/#setup) to learn how to set up t
 3. Go to Downloads -> Settings -> Extensions -> Drip Settings and enter your "Drip API Key" and "Drip Account ID".
 
 == Changelog ==
+
+= 1.4.2 -
+
+* Fix: Bug for settings on EDD>=2.5 where drip api key and account are lost whenever extension settings in other sections are saved.
+
+* Fix: Bug with with `value` property in custom event `payment processed` not being integer.  Drip requires this property to be an integer for some reason or the event will not be processed.
+
+* Update: Tested with WordPress 4.9
 
 = 1.4.1 -
 
