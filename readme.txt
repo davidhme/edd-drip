@@ -90,6 +90,10 @@ Please [go here](http://fatcatapps.com/edd-drip/#setup) to learn how to set up t
 
 * Fix: Bug with with `value` property in custom event `payment processed` not being integer.  Drip requires this property to be an integer for some reason or the event will not be processed.
 
+* Update: Added support for free downloads when edd bypass modal is turned on. When bypass modal is on the cart items are empty so subscriber was not being added.
+
+* Update: Added price_id property to 'Made a Purchase' event
+
 * Update: Tested with WordPress 4.9
 
 = 1.4.1 -
