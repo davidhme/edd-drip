@@ -4,7 +4,7 @@
  * Plugin Name:     Easy Digital Downloads - Drip
  * Plugin URI:      http://fatcatapps.com/edd-drip/
  * Description:     Integrates Easy Digital Downloads with the Drip Email Marketing Automation tool.
- * Version:         1.4.2
+ * Version:         1.4.3
  * Author:          Fatcat Apps
  * Author URI:      http://fatcatapps.com/
  *
@@ -79,6 +79,8 @@ if (!class_exists( 'EDD_Drip' )) {
         private function includes() {
             if (!class_exists( 'EDDDripApi' ))
                 require_once(EDD_DRIP_DIR . 'includes/drip/drip.php');
+	        if (!class_exists( 'EDDD_Drip_Logging' ))
+		        require_once(EDD_DRIP_DIR . 'includes/edd-drip-logging.php');
         }
 
         /**
@@ -114,6 +116,9 @@ if (!class_exists( 'EDD_Drip' )) {
             add_filter( 'edd_settings_extensions', array( $this, 'eddcp_add_drip_settings' ), 1 );
 
             add_action( 'edd_complete_purchase', array( $this, 'eddcp_fire_event_drip_after_complete_purchase' ), 10 , 1 );
+
+	        //Runs 30 seconds after event to offload processing - 3 parms
+	        add_action( 'edd_after_payment_actions', array( $this, 'eddcp_after_payment_actions' ), 10 , 3 );
 
             add_action( 'edd_update_payment_status', array( $this, 'eddcp_trigger_change_payment_action' ), 10 , 3 );
             
@@ -227,6 +232,12 @@ if (!class_exists( 'EDD_Drip' )) {
                                             'type' => 'text',
                                             'size' => 'regular'
                             ),
+                            array(
+				                            'id'    => 'eddcp_drip_account_logging',
+				                            'name'  => __( 'Logging', 'eddcp' ),
+				                            'desc'  => __( 'Turn on logging', 'eddcp' ),
+				                            'type'  => 'checkbox'
+                            ),
             );
 
 	        // If EDD is at version 2.5 or later...
@@ -279,11 +290,26 @@ if (!class_exists( 'EDD_Drip' )) {
 	     *
 	     * @param $payment_id
 	     */
-        
-        function eddcp_fire_event_drip_after_complete_purchase( $payment_id ) {
+	    function eddcp_fire_event_drip_after_complete_purchase($payment_id){
+
+	    }
+
+	    //This event is called 30 seconds after purchase is complete -  uses cron
+        function eddcp_after_payment_actions( $payment_id = 0, $payment = false, $customer = false  ) {
+	        EDD_Drip_Logging::log_debug(__method__,'EDD after payment event fired for payment ID:', $payment_id);
+
+        	/* Notes for next time working in this method
+        	 *
+        	 * Doesnt look like renewals are firing this event
+        	 * Right now wpbackitup isnt doing much with renewal events but
+        	 * next time in this method test and verify working.
+        	 *
+        	 * also change this method to use edd_after_payment_actions action - will need to add 3 parms
+        	 * added hook but commented out for next time
+        	 *
+        	 */
 
             $infor = $this->get_infor_by_payment_id($payment_id);
-            //error_log(var_export($infor,true));
 
             $email = $infor['email'];
             $first_name = $infor['first_name'];
@@ -291,6 +317,7 @@ if (!class_exists( 'EDD_Drip' )) {
             $cart_items = $infor['cart_items'];
             $name = $infor['name'];
             $is_renewal = $infor['is_renewal'];
+	        EDD_Drip_Logging::log_debug(__method__,'Purchase event email:' .$email);
             
             // push subscribe infor to server
             $drip_api = EDDDripApi::getInstance();
@@ -301,11 +328,13 @@ if (!class_exists( 'EDD_Drip' )) {
             if (isset( $result['errors'] ) && $result['errors']) {
 	            //If no items in cart then add the subscriber anyway
 	            if (empty($cart_items)) {
-		            $drip_api->add_subscriber( $email, array(
+		            $drip_response = $drip_api->add_subscriber( $email, array(
 			            'first_name' => $first_name,
 			            'name'       => $name,
 			            'lifetime_value' => $current_lifetime_value
 		            ) );
+
+		            EDD_Drip_Logging::log_debug(__method__,'Drip Add Subscriber(1) response:',$drip_response);
 	            }
             } else {
                 $subscribers_field = $result['subscribers'][0];
@@ -317,15 +346,16 @@ if (!class_exists( 'EDD_Drip' )) {
 	            $current_lifetime_value +=$item['price'];
 
 	            //update subscriber lifetime value
-                $drip_api->add_subscriber( $email,
+	            $drip_response = $drip_api->add_subscriber( $email,
                         array(
                                 'first_name'  => $first_name,
                                 'name'        => $name,
                                 'lifetime_value' => $current_lifetime_value
                         )
                 );
+	            EDD_Drip_Logging::log_debug(__method__,'Drip Add Subscriber(2) response:',$drip_response);
 
-                $drip_api->fire_event(
+	            $drip_response = $drip_api->fire_event(
                         $email,
                         'Made a purchase',
                         array(
@@ -337,12 +367,13 @@ if (!class_exists( 'EDD_Drip' )) {
                                 'is_renewal'    => $is_renewal
                         )
                 );
-
+	            EDD_Drip_Logging::log_debug(__method__,'Drip Made a Purchase Event Response:',$drip_response);
             }
         }
         
         /**
-         * 
+         *  Payment status changed -  used for Refunds  & Abandoned Carts
+         *
          *  - checks whether the order status changed to refund. If so, call Drip API with "Refunded" event
          *  - checks whether the order status changed to abandoned. If so, call Drip API with "Abandoned cart" event
          *  - The plugin also tracks the following properties:
@@ -356,11 +387,11 @@ if (!class_exists( 'EDD_Drip' )) {
          *       + If a customer makes a purchase:
          *             lifetime_value+={price}
          *       + If a customer refunds:
-         *             lifetime_value-={price}  
-         * 
+         *             lifetime_value-={price}
          * 
          */        
         function eddcp_trigger_change_payment_action( $payment_id, $new_status, $old_status ) {
+	        EDD_Drip_Logging::log_info(__method__,'EDD Change Payment Event Fired for payment id:',$payment_id);
 
             // push subscribe infor to server
             $drip_api = EDDDripApi::getInstance();
@@ -388,7 +419,8 @@ if (!class_exists( 'EDD_Drip' )) {
                             )
                     );
 
-                    $drip_api->fire_event(
+
+                    $drip_response = $drip_api->fire_event(
                             $email,
                             'Refunded',
                             array(
@@ -397,6 +429,7 @@ if (!class_exists( 'EDD_Drip' )) {
                                     'price_name' => edd_get_cart_item_price_name( $item )
                             )
                     );
+	                EDD_Drip_Logging::log_debug(__method__,'Drip refunded event response:',$drip_response);
                 }
             } elseif ($new_status == 'abandoned') {
 
@@ -414,7 +447,7 @@ if (!class_exists( 'EDD_Drip' )) {
                 
                 foreach ($cart_items as $item) {
 
-                    $response = $drip_api->fire_event(
+                    $drip_response = $drip_api->fire_event(
                             $email,
                             'Abandoned cart',
                             array(
@@ -424,7 +457,7 @@ if (!class_exists( 'EDD_Drip' )) {
                             )
                     );
 
-	                //error_log('Abandoned Response:'. var_export($response,true));
+	                EDD_Drip_Logging::log_debug(__method__,'Drip Abandoned Cart Event Response:',$drip_response);
                 }                  
             } 
             
