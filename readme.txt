@@ -102,6 +102,8 @@ Please [go here](http://fatcatapps.com/edd-drip/#setup) to learn how to set up t
 
 * Update: Tested with WordPress 4.9
 
+* Update: Added Monolog via composer
+
 = 1.4.1 -
 
 * Fix: A bug in 1.4.0 removed `price_name` from the `Made a purchase` event

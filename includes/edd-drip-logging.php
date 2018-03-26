@@ -1,72 +1,93 @@
-<?php
-
-// Exit if accessed directly
-if (!defined( 'ABSPATH' ))
-    exit;
+<?php if (!defined( 'ABSPATH' ))  exit;
+use Monolog\Logger;
+use Monolog\Handler\RotatingFileHandler;
 
 if (!class_exists( 'EDD_Drip_Logging' )) {
 
-	//Temporary Logging class
-	//replace with wonolog
-	//https://torquemag.io/2017/10/logging-wordpress-bugs-wonolog/
     class EDD_Drip_Logging {
 
-    	const DEBUG     ='debug';
-	    const WARNING   ='warning';
-	    const ERROR     ='error';
-	    const INFO      ='info';
+	    protected static $instance;
+	    private static $logger_name = 'Edd-Drip';
+	    private static $log_path = EDD_DRIP_DIR . 'logs';
+	    private static $log_file_name = 'edd-drip.log';
 
-    	private static $dateFormat= 'Y-m-d H:i:s';
-
-	    private static function log($function, $short_message, $message,$type) {
-
-	    	try {
-
-	    		//is LOGGING TURNER ON
-			    $logging= edd_get_option('eddcp_drip_account_logging');
-				if (!$logging) return;
-
-			    //if message isnt string then convert to string
-			    if (! is_string($message)) $message = var_export($message,true);
-
-			    //Temporary logging class
-			    $message = sprintf("%s(%s) %s: %s %s",self::getTimestamp(),$type, $function, $short_message,$message);
-			    error_log($message);
-
-		    } catch (Exception $ex){
-	    		//swallow errors here
-		    }
-	    }
-
-	    public static function log_info($function, $short_message, $message="") {
-			self::log($function, $short_message, $message,self::INFO);
-	    }
-
-	    public static function log_error($function, $short_message,$message="") {
-		    self::log($function, $short_message,$message,self::ERROR);
-	    }
-
-	    public static function log_warning($function, $short_message,$message="") {
-		    self::log($function, $short_message,$message,self::WARNING);
-	    }
-
-	    public static function log_debug($function, $short_message,$message="") {
-		    self::log($function, $short_message,$message,self::DEBUG);
-	    }
-
-	    private static function getTimestamp()
+	    /**
+	     * Method to return the Monolog instance
+	     *
+	     * @return \Monolog\Logger
+	     */
+	    static public function getLogger()
 	    {
-		    try {
+	    	//Check logging turned on
+		    $logging= edd_get_option('eddcp_drip_account_logging');  if (!$logging) return false;
 
-			    $originalTime = microtime(true);
-			    $micro = sprintf("%06d", ($originalTime - floor($originalTime)) * 1000000);
-			    $date = new DateTime(date('Y-m-d H:i:s.' . $micro, $originalTime));
-
-		        return $date->format(self::$dateFormat);
-
-		    } catch (Exception $ex){
-			    return time();
+		    if (! self::$instance) {
+			    self::configureInstance();
 		    }
+
+		    return self::$instance;
+	    }
+	    /**
+	     * Configure Monolog to use a rotating files system.
+	     *
+	     * @return Logger
+	     */
+	    protected static function configureInstance()
+	    {
+		    $dir = self::$log_path;
+		    if (!file_exists($dir)){
+			    mkdir($dir, 0700, true);
+		    }
+
+		    $logger = new Logger(self::$logger_name);
+		    $logger->pushHandler(new RotatingFileHandler($dir . DIRECTORY_SEPARATOR . self::$log_file_name, 5));
+		    self::$instance = $logger;
+	    }
+
+	    public static function debug($function, $message, array $context = []){
+		    $logger = self::getLogger();
+			if ($logger) $logger->addDebug(self::format_message( $function, $message ), $context);
+	    }
+	    public static function info($function,$message, array $context = []){
+		    $logger = self::getLogger();
+		    if ($logger) $logger->addInfo(self::format_message( $function, $message ), $context);
+	    }
+	    public static function notice($function,$message, array $context = []){
+		    $logger = self::getLogger();
+		    if ($logger) $logger->addNotice(self::format_message( $function, $message ), $context);
+	    }
+	    public static function warning($function,$message, array $context = []){
+		    $logger = self::getLogger();
+		    if ($logger) $logger->addWarning(self::format_message( $function, $message ), $context);
+	    }
+	    public static function error($function,$message, array $context = []){
+		    $logger = self::getLogger();
+		    if ($logger) $logger->addError(self::format_message( $function, $message ), $context);
+	    }
+	    public static function critical($function,$message, array $context = []){
+		    $logger = self::getLogger();
+		    if ($logger) $logger->addCritical(self::format_message( $function, $message ), $context);
+	    }
+	    public static function alert($function,$message, array $context = []){
+		    $logger = self::getLogger();
+		    if ($logger) $logger->addAlert(self::format_message( $function, $message ), $context);
+	    }
+	    public static function emergency($function,$message, array $context = []){
+		    $logger = self::getLogger();
+		    if ($logger) $logger->addEmergency(self::format_message( $function, $message ), $context);
+	    }
+
+	    /**
+	     * Format logging message
+	     *
+	     * @param $function
+	     * @param $message
+	     *
+	     * @return string
+	     */
+	    private static function format_message( $function, $message ) {
+		    $message = sprintf( "[%s] %s", $function, $message );
+		    return $message;
 	    }
     }
 
