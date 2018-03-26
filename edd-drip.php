@@ -203,7 +203,7 @@ if (!class_exists( 'EDD_Drip' )) {
          * 
          */
         public function eddcp_add_drip_settings( $settings ) {
-			//EDD_Drip_Logging::info(__METHOD__,'Drip Settings.');
+			EDD_Drip_Logging::info(__METHOD__,'Drip Settings.');
 
             $eddcp_settings = array(
                             array(

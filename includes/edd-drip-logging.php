@@ -1,4 +1,5 @@
 <?php if (!defined( 'ABSPATH' ))  exit;
+
 use Monolog\Logger;
 use Monolog\Handler\RotatingFileHandler;
 
@@ -7,9 +8,26 @@ if (!class_exists( 'EDD_Drip_Logging' )) {
     class EDD_Drip_Logging {
 
 	    protected static $instance;
-	    private static $logger_name = 'Edd-Drip';
-	    private static $log_path = EDD_DRIP_DIR . 'logs';
-	    private static $log_file_name = 'edd-drip.log';
+
+	    /**
+	     * Configure Monolog to use a rotating files system.
+	     *
+	     * @return Logger
+	     */
+	    protected static function configureInstance()
+	    {
+		    $logger_name = 'Edd-Drip';
+		    $log_path = EDD_DRIP_DIR . 'logs';
+		    $log_file_name = 'edd-drip.log';
+
+		    if (!file_exists($log_path)){
+			    mkdir($log_path, 0700, true);
+		    }
+
+		    $logger = new Logger($logger_name);
+		    $logger->pushHandler(new RotatingFileHandler($log_path . DIRECTORY_SEPARATOR . $log_file_name, 5));
+		    self::$instance = $logger;
+	    }
 
 	    /**
 	     * Method to return the Monolog instance
@@ -18,7 +36,7 @@ if (!class_exists( 'EDD_Drip_Logging' )) {
 	     */
 	    static public function getLogger()
 	    {
-	    	//Check logging turned on
+		    //Check logging turned on
 		    $logging= edd_get_option('eddcp_drip_account_logging');  if (!$logging) return false;
 
 		    if (! self::$instance) {
@@ -26,22 +44,6 @@ if (!class_exists( 'EDD_Drip_Logging' )) {
 		    }
 
 		    return self::$instance;
-	    }
-	    /**
-	     * Configure Monolog to use a rotating files system.
-	     *
-	     * @return Logger
-	     */
-	    protected static function configureInstance()
-	    {
-		    $dir = self::$log_path;
-		    if (!file_exists($dir)){
-			    mkdir($dir, 0700, true);
-		    }
-
-		    $logger = new Logger(self::$logger_name);
-		    $logger->pushHandler(new RotatingFileHandler($dir . DIRECTORY_SEPARATOR . self::$log_file_name, 5));
-		    self::$instance = $logger;
 	    }
 
 	    public static function debug($function, $message, array $context = []){
