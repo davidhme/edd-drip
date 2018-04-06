@@ -4,7 +4,7 @@
  * Plugin Name:     Easy Digital Downloads - Drip
  * Plugin URI:      http://fatcatapps.com/edd-drip/
  * Description:     Integrates Easy Digital Downloads with the Drip Email Marketing Automation tool.
- * Version:         1.4.5
+ * Version:         1.4.6
  * Author:          Fatcat Apps
  * Author URI:      http://fatcatapps.com/
  *
@@ -122,11 +122,7 @@ if (!class_exists( 'EDD_Drip' )) {
             add_action( 'edd_update_payment_status', array( $this, 'eddcp_trigger_change_payment_action' ), 10 , 3 );
             
             add_action('edd_drip_cron_half_hourly', array($this, 'edd_drip_cron_half_hourly_func'));
-            // Handle licensing
-            // @todo        Replace the Plugin Name and Your Name with your data
-            /* if( class_exists( 'EDD_License' ) ) {
-              $license = new EDD_License( __FILE__, 'Plugin Name', EDD_PLUGIN_NAME_VER, 'Your Name' );
-              } */
+
         }
 
         /**
@@ -203,7 +199,7 @@ if (!class_exists( 'EDD_Drip' )) {
          * 
          */
         public function eddcp_add_drip_settings( $settings ) {
-			EDD_Drip_Logging::info(__METHOD__,'Drip Settings.');
+			//EDD_Drip_Logging::info(__METHOD__,'Drip Settings.');
 
             $eddcp_settings = array(
                             array(
@@ -271,55 +267,48 @@ if (!class_exists( 'EDD_Drip' )) {
             return $lists;
         }
 
+
+        // This method is no longer being used.
+	    function eddcp_fire_event_drip_after_complete_purchase($payment_id){
+
+	    }
+
 	    /**
+	     *    After Payment Action - Event is called 30 seconds after purchase is complete
+	     *      -  uses cron
 	     *
-	     * - adds an email to the drip subscription list
-	     * - change the lifetime_value
-	     * - fire event Made a purchase
-	     * - The plugin also tracks the following properties:
-	     *
+	     *      - adds an email to the drip subscription list
+	     *      - change the lifetime_value
+	     *      - fire event Made a purchase
+	     *      - The plugin also tracks the following properties:         *
 	     *          value (Price of the product bought)
 	     *          product_name (Name of the product bought)
 	     *          price_name (The price_name [if you're using variable pricing])
-	     * - Lifetime Value (LTV) Tracking This plugin tracks your customer's lifetime value in a custom field called lifetime_value.
 	     *
+	     *      - Lifetime Value (LTV) Tracking This plugin tracks your customer's lifetime value in a custom field called lifetime_value.
 	     *       + If a customer makes a purchase:
 	     *             lifetime_value+={price}
 	     *       + If a customer refunds:
 	     *             lifetime_value-={price}
 	     *
-	     * @param $payment_id
+	     * @param int  $payment_id
+	     * @param bool $payment
+	     * @param bool $customer
 	     */
-	    function eddcp_fire_event_drip_after_complete_purchase($payment_id){
-
-	    }
-
-	    //This event is called 30 seconds after purchase is complete -  uses cron
         function eddcp_after_payment_actions( $payment_id = 0, $payment = false, $customer = false  ) {
 	        EDD_Drip_Logging::debug(__METHOD__,'EDD after payment event fired for payment ID:'. $payment_id);
 
-        	/* Notes for next time working in this method
-        	 *
-        	 * Doesnt look like renewals are firing this event
-        	 * Right now wpbackitup isnt doing much with renewal events but
-        	 * next time in this method test and verify working.
-        	 *
-        	 * also change this method to use edd_after_payment_actions action - will need to add 3 parms
-        	 * added hook but commented out for next time
-        	 *
-        	 */
+            $payment_info = $this->get_payment_info_by_payment_id($payment_id);
 
-            $infor = $this->get_infor_by_payment_id($payment_id);
-
-            $email = $infor['email'];
-            $first_name = $infor['first_name'];
+            $email = $payment_info['email'];
+            $first_name = $payment_info['first_name'];
             //get all item in the cart
-            $cart_items = $infor['cart_items'];
-            $name = $infor['name'];
-            $is_renewal = $infor['is_renewal'];
-	        EDD_Drip_Logging::debug(__METHOD__,'Purchase event email:' .$email);
-            
-            // push subscribe infor to server
+            $cart_items = $payment_info['cart_items'];
+            $name = $payment_info['name'];
+            $is_renewal = $payment_info['is_renewal'];
+	        EDD_Drip_Logging::debug(__METHOD__,'Payment Info:' .var_export($payment_info,true));
+
+            // push subscribe info to server
             $drip_api = EDDDripApi::getInstance();
 
             $result = json_decode( $drip_api->get_subscribers( $email ), true );
@@ -391,8 +380,8 @@ if (!class_exists( 'EDD_Drip' )) {
          * 
          */        
         function eddcp_trigger_change_payment_action( $payment_id, $new_status, $old_status ) {
-	        EDD_Drip_Logging::debug(__METHOD__,'EDD Change Payment Event Fired for payment id:'. $payment_id);
-
+	        EDD_Drip_Logging::debug(__METHOD__,'EDD Change Payment Event Fired for payment id:'. var_export($payment_id,true));
+			//Dont think this is firing
 
             // push subscribe infor to server
             $drip_api = EDDDripApi::getInstance();
@@ -400,7 +389,7 @@ if (!class_exists( 'EDD_Drip' )) {
 	        switch ($new_status) {
 		        case "refunded":
 
-			        $infor = $this->get_infor_by_payment_id($payment_id);
+			        $infor = $this->get_payment_info_by_payment_id($payment_id);
 			        $email = $infor['email'];
 			        //get all item in the cart
 			        $cart_items = $infor['cart_items'];
@@ -436,7 +425,7 @@ if (!class_exists( 'EDD_Drip' )) {
 				        return;
 			        }
 
-			        $infor = $this->get_infor_by_payment_id($payment_id);
+			        $infor = $this->get_payment_info_by_payment_id($payment_id);
 			        $email = $infor['email'];
 			        //get all item in the cart
 			        $cart_items = $infor['cart_items'];
@@ -460,7 +449,7 @@ if (!class_exists( 'EDD_Drip' )) {
 
 		        case "renewal payment":
 
-		        	$infor = $this->get_infor_by_payment_id($payment_id);
+		        	$infor = $this->get_payment_info_by_payment_id($payment_id);
 			        EDD_Drip_Logging::debug(__METHOD__,'Renewal Payment:'. var_export($infor,true));
 
 		        	break;
@@ -533,27 +522,30 @@ if (!class_exists( 'EDD_Drip' )) {
 //            }
             
         }
-        
-       /**
-        *  get_infor_by_payment_id
-        * @param type $payment_id
-        * @return type
-        */
-       function get_infor_by_payment_id ( $payment_id ) {
 
-             $meta = get_post_meta( $payment_id,
-                        '_edd_payment_meta',
-                        true );
+	    /**
+	     *  Get Payment Information by Payment ID
+	     *
+	     * @param $payment_id
+	     *
+	     * @return mixed
+	     */
+       function get_payment_info_by_payment_id ( $payment_id ) {
 
-              $user_infor = $meta['user_info'];
-              $infor['email'] = $user_infor['email'];
-              $infor['first_name'] = $user_infor['first_name'];
-              $infor['name'] = $user_infor['first_name'] . ' ' . $user_infor['last_name'];
-              //get all item in the cart
-              $infor['cart_items'] = $meta['cart_details'];
-              $infor['is_renewal'] = (bool) get_post_meta( $payment_id, '_edd_sl_is_renewal', true );
+			$meta = get_post_meta( $payment_id,
+			        '_edd_payment_meta',
+			        true );
+			EDD_Drip_Logging::debug(__METHOD__,'Payment Info:' .var_export($meta,true));
 
-           return $infor;
+			$user_infor = $meta['user_info'];
+			$infor['email'] = $user_infor['email'];
+			$infor['first_name'] = $user_infor['first_name'];
+			$infor['name'] = $user_infor['first_name'] . ' ' . $user_infor['last_name'];
+			//get all item in the cart
+			$infor['cart_items'] = $meta['cart_details'];
+			$infor['is_renewal'] = (bool) get_post_meta( $payment_id, '_edd_sl_is_renewal', true );
+
+			return $infor;
        } 
         
       /**
@@ -601,7 +593,7 @@ if (!class_exists( 'EDD_Drip' )) {
            foreach ($payments as $payment) {
                 // push subscribe infor to server
                 $drip_api = EDDDripApi::getInstance();
-                $infor = $this->get_infor_by_payment_id($payment->ID);
+                $infor = $this->get_payment_info_by_payment_id($payment->ID);
                 $email = $infor['email'];
                 //get all item in the cart
                 $cart_items = $infor['cart_items'];
