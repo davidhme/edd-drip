@@ -1,4 +1,3 @@
-test commit
 === Easy Digital Downloads - Drip ===
 Contributors: davidhme, fatcatapps, cssimmon
 Donate link: 
