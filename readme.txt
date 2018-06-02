@@ -1,3 +1,4 @@
+test commit
 === Easy Digital Downloads - Drip ===
 Contributors: davidhme, fatcatapps, cssimmon
 Donate link: 
@@ -94,9 +95,15 @@ Please [go here](http://fatcatapps.com/edd-drip/#setup) to learn how to set up t
 
 * Update: Added support for free downloads when edd bypass modal is turned on. When bypass modal is on the cart items are empty so subscriber was not being added.
 
+* Update: Added logging option to UI and simple logging class
+
+* Update: Updated hook to use after payment instead of complete purchase
+
 * Update: Added price_id property to 'Made a Purchase' event
 
 * Update: Tested with WordPress 4.9
+
+* Update: Added Monolog via composer
 
 = 1.4.1 -
 

@@ -4,7 +4,7 @@
  * Plugin Name:     Easy Digital Downloads - Drip
  * Plugin URI:      http://fatcatapps.com/edd-drip/
  * Description:     Integrates Easy Digital Downloads with the Drip Email Marketing Automation tool.
- * Version:         1.4.2
+ * Version:         1.4.6
  * Author:          Fatcat Apps
  * Author URI:      http://fatcatapps.com/
  *
@@ -77,8 +77,9 @@ if (!class_exists( 'EDD_Drip' )) {
          * @return      void
          */
         private function includes() {
-            if (!class_exists( 'EDDDripApi' ))
-                require_once(EDD_DRIP_DIR . 'includes/drip/drip.php');
+
+	        require_once(EDD_DRIP_DIR . 'vendor/autoload.php');
+
         }
 
         /**
@@ -115,14 +116,13 @@ if (!class_exists( 'EDD_Drip' )) {
 
             add_action( 'edd_complete_purchase', array( $this, 'eddcp_fire_event_drip_after_complete_purchase' ), 10 , 1 );
 
+	        //Runs 30 seconds after event to offload processing - 3 parms
+	        add_action( 'edd_after_payment_actions', array( $this, 'eddcp_after_payment_actions' ), 10 , 3 );
+
             add_action( 'edd_update_payment_status', array( $this, 'eddcp_trigger_change_payment_action' ), 10 , 3 );
             
             add_action('edd_drip_cron_half_hourly', array($this, 'edd_drip_cron_half_hourly_func'));
-            // Handle licensing
-            // @todo        Replace the Plugin Name and Your Name with your data
-            /* if( class_exists( 'EDD_License' ) ) {
-              $license = new EDD_License( __FILE__, 'Plugin Name', EDD_PLUGIN_NAME_VER, 'Your Name' );
-              } */
+
         }
 
         /**
@@ -199,6 +199,7 @@ if (!class_exists( 'EDD_Drip' )) {
          * 
          */
         public function eddcp_add_drip_settings( $settings ) {
+			//EDD_Drip_Logging::info(__METHOD__,'Drip Settings.');
 
             $eddcp_settings = array(
                             array(
@@ -226,6 +227,12 @@ if (!class_exists( 'EDD_Drip' )) {
                                                     'eddcp' ),
                                             'type' => 'text',
                                             'size' => 'regular'
+                            ),
+                            array(
+				                            'id'    => 'eddcp_drip_account_logging',
+				                            'name'  => __( 'Logging', 'eddcp' ),
+				                            'desc'  => __( 'Turn on logging', 'eddcp' ),
+				                            'type'  => 'checkbox'
                             ),
             );
 
@@ -260,39 +267,48 @@ if (!class_exists( 'EDD_Drip' )) {
             return $lists;
         }
 
+
+        // This method is no longer being used.
+	    function eddcp_fire_event_drip_after_complete_purchase($payment_id){
+
+	    }
+
 	    /**
+	     *    After Payment Action - Event is called 30 seconds after purchase is complete
+	     *      -  uses cron
 	     *
-	     * - adds an email to the drip subscription list
-	     * - change the lifetime_value
-	     * - fire event Made a purchase
-	     * - The plugin also tracks the following properties:
-	     *
+	     *      - adds an email to the drip subscription list
+	     *      - change the lifetime_value
+	     *      - fire event Made a purchase
+	     *      - The plugin also tracks the following properties:         *
 	     *          value (Price of the product bought)
 	     *          product_name (Name of the product bought)
 	     *          price_name (The price_name [if you're using variable pricing])
-	     * - Lifetime Value (LTV) Tracking This plugin tracks your customer's lifetime value in a custom field called lifetime_value.
 	     *
+	     *      - Lifetime Value (LTV) Tracking This plugin tracks your customer's lifetime value in a custom field called lifetime_value.
 	     *       + If a customer makes a purchase:
 	     *             lifetime_value+={price}
 	     *       + If a customer refunds:
 	     *             lifetime_value-={price}
 	     *
-	     * @param $payment_id
+	     * @param int  $payment_id
+	     * @param bool $payment
+	     * @param bool $customer
 	     */
-        
-        function eddcp_fire_event_drip_after_complete_purchase( $payment_id ) {
+        function eddcp_after_payment_actions( $payment_id = 0, $payment = false, $customer = false  ) {
+	        EDD_Drip_Logging::debug(__METHOD__,'EDD after payment event fired for payment ID:'. $payment_id);
 
-            $infor = $this->get_infor_by_payment_id($payment_id);
-            //error_log(var_export($infor,true));
+            $payment_info = $this->get_payment_info_by_payment_id($payment_id);
 
-            $email = $infor['email'];
-            $first_name = $infor['first_name'];
+            $email = $payment_info['email'];
+            $first_name = $payment_info['first_name'];
             //get all item in the cart
-            $cart_items = $infor['cart_items'];
-            $name = $infor['name'];
-            $is_renewal = $infor['is_renewal'];
-            
-            // push subscribe infor to server
+            $cart_items = $payment_info['cart_items'];
+            $name = $payment_info['name'];
+            $is_renewal = $payment_info['is_renewal'];
+	        EDD_Drip_Logging::debug(__METHOD__,'Payment Info:' .var_export($payment_info,true));
+
+            // push subscribe info to server
             $drip_api = EDDDripApi::getInstance();
 
             $result = json_decode( $drip_api->get_subscribers( $email ), true );
@@ -301,11 +317,13 @@ if (!class_exists( 'EDD_Drip' )) {
             if (isset( $result['errors'] ) && $result['errors']) {
 	            //If no items in cart then add the subscriber anyway
 	            if (empty($cart_items)) {
-		            $drip_api->add_subscriber( $email, array(
+		            $drip_response = $drip_api->add_subscriber( $email, array(
 			            'first_name' => $first_name,
 			            'name'       => $name,
 			            'lifetime_value' => $current_lifetime_value
 		            ) );
+
+		            EDD_Drip_Logging::debug(__METHOD__,'Drip Add Subscriber(1) response:' .var_export($drip_response,true));
 	            }
             } else {
                 $subscribers_field = $result['subscribers'][0];
@@ -317,15 +335,16 @@ if (!class_exists( 'EDD_Drip' )) {
 	            $current_lifetime_value +=$item['price'];
 
 	            //update subscriber lifetime value
-                $drip_api->add_subscriber( $email,
+	            $drip_response = $drip_api->add_subscriber( $email,
                         array(
                                 'first_name'  => $first_name,
                                 'name'        => $name,
                                 'lifetime_value' => $current_lifetime_value
                         )
                 );
+	            EDD_Drip_Logging::debug(__METHOD__,'Drip Add Subscriber(2) response:' .var_export($drip_response,true));
 
-                $drip_api->fire_event(
+	            $drip_response = $drip_api->fire_event(
                         $email,
                         'Made a purchase',
                         array(
@@ -337,12 +356,13 @@ if (!class_exists( 'EDD_Drip' )) {
                                 'is_renewal'    => $is_renewal
                         )
                 );
-
+	            EDD_Drip_Logging::debug(__METHOD__,'Drip Made a Purchase Event Response:' .var_export($drip_response,true));
             }
         }
         
         /**
-         * 
+         *  Payment status changed -  used for Refunds  & Abandoned Carts
+         *
          *  - checks whether the order status changed to refund. If so, call Drip API with "Refunded" event
          *  - checks whether the order status changed to abandoned. If so, call Drip API with "Abandoned cart" event
          *  - The plugin also tracks the following properties:
@@ -356,100 +376,176 @@ if (!class_exists( 'EDD_Drip' )) {
          *       + If a customer makes a purchase:
          *             lifetime_value+={price}
          *       + If a customer refunds:
-         *             lifetime_value-={price}  
-         * 
+         *             lifetime_value-={price}
          * 
          */        
         function eddcp_trigger_change_payment_action( $payment_id, $new_status, $old_status ) {
+	        EDD_Drip_Logging::debug(__METHOD__,'EDD Change Payment Event Fired for payment id:'. var_export($payment_id,true));
+			//Dont think this is firing
 
             // push subscribe infor to server
             $drip_api = EDDDripApi::getInstance();
+
+	        switch ($new_status) {
+		        case "refunded":
+
+			        $infor = $this->get_payment_info_by_payment_id($payment_id);
+			        $email = $infor['email'];
+			        //get all item in the cart
+			        $cart_items = $infor['cart_items'];
+
+			        $result = json_decode( $drip_api->get_subscribers( $email ), true );
+			        $subscribers_field = $result['subscribers'][0];
+			        $current_lifetime_value = (isset( $subscribers_field['custom_fields']['lifetime_value'] )) ? $subscribers_field['custom_fields']['lifetime_value'] : 0;
+
+			        foreach ($cart_items as $item) {
+				        // push subscribe infor to server
+
+				        $current_lifetime_value -= $item['price'];
+				        $drip_api->add_subscriber( $email, array(
+						        'lifetime_value' => $current_lifetime_value
+					        ) );
+
+
+				        $drip_response = $drip_api->fire_event( $email, 'Refunded', array(
+						        'value'        => (int) $item['price'],
+						        'product_name' => $item['name'],
+						        'price_name'   => edd_get_cart_item_price_name( $item )
+					        ) );
+				        EDD_Drip_Logging::debug( __METHOD__, 'Drip refunded event response:' . var_export( $drip_response, true ) );
+			        }
+
+		        	break;
+
+		        case "abandoned":
+			        $payment = get_post( $payment_id );
+			        $time_make_payment = strtotime($payment->post_date) ;
+			        // if the payment was existed over 30mins , no need to do any thing
+			        if( time() - $time_make_payment > 1800 ) {
+				        return;
+			        }
+
+			        $infor = $this->get_payment_info_by_payment_id($payment_id);
+			        $email = $infor['email'];
+			        //get all item in the cart
+			        $cart_items = $infor['cart_items'];
+
+			        foreach ($cart_items as $item) {
+
+				        $drip_response = $drip_api->fire_event(
+					        $email,
+					        'Abandoned cart',
+					        array(
+						        'value' => (int) $item['price'],
+						        'product_name' => $item['name'],
+						        'price_name' => edd_get_cart_item_price_name( $item )
+					        )
+				        );
+
+				        EDD_Drip_Logging::debug(__METHOD__,'Drip Abandoned Cart Event Response:'. var_export($drip_response,true));
+			        }
+
+		        	break;
+
+		        case "renewal payment":
+
+		        	$infor = $this->get_payment_info_by_payment_id($payment_id);
+			        EDD_Drip_Logging::debug(__METHOD__,'Renewal Payment:'. var_export($infor,true));
+
+		        	break;
+	        }
+
             
-            if ($new_status == 'refunded') {
-                
-                $infor = $this->get_infor_by_payment_id($payment_id);
-                $email = $infor['email'];
-                //get all item in the cart
-                $cart_items = $infor['cart_items'];
-
-                $result = json_decode( $drip_api->get_subscribers( $email ),
-                        true );
-                $subscribers_field = $result['subscribers'][0];
-                $current_lifetime_value = (isset( $subscribers_field['custom_fields']['lifetime_value'] )) ? $subscribers_field['custom_fields']['lifetime_value'] : 0;
-
-
-                foreach ($cart_items as $item) {
-                    // push subscribe infor to server
-
-                    $current_lifetime_value -=$item['price'];
-                    $drip_api->add_subscriber( $email,
-                            array(
-                                    'lifetime_value' => $current_lifetime_value
-                            )
-                    );
-
-                    $drip_api->fire_event(
-                            $email,
-                            'Refunded',
-                            array(
-                                    'value' => (int) $item['price'],
-                                    'product_name' => $item['name'],
-                                    'price_name' => edd_get_cart_item_price_name( $item )
-                            )
-                    );
-                }
-            } elseif ($new_status == 'abandoned') {
-
-                $payment = get_post( $payment_id ); 
-                $time_make_payment = strtotime($payment->post_date) ;
-                // if the payment was existed over 30mins , no need to do any thing
-                if( time() - $time_make_payment > 1800 ) {
-                    return;
-                }
-                
-                $infor = $this->get_infor_by_payment_id($payment_id);
-                $email = $infor['email'];
-                //get all item in the cart
-                $cart_items = $infor['cart_items'];
-                
-                foreach ($cart_items as $item) {
-
-                    $response = $drip_api->fire_event(
-                            $email,
-                            'Abandoned cart',
-                            array(
-                                    'value' => (int) $item['price'],
-                                    'product_name' => $item['name'],
-                                    'price_name' => edd_get_cart_item_price_name( $item )
-                            )
-                    );
-
-	                //error_log('Abandoned Response:'. var_export($response,true));
-                }                  
-            } 
+//            if ($new_status == 'refunded') {
+//
+//                $infor = $this->get_infor_by_payment_id($payment_id);
+//                $email = $infor['email'];
+//                //get all item in the cart
+//                $cart_items = $infor['cart_items'];
+//
+//                $result = json_decode( $drip_api->get_subscribers( $email ),
+//                        true );
+//                $subscribers_field = $result['subscribers'][0];
+//                $current_lifetime_value = (isset( $subscribers_field['custom_fields']['lifetime_value'] )) ? $subscribers_field['custom_fields']['lifetime_value'] : 0;
+//
+//
+//                foreach ($cart_items as $item) {
+//                    // push subscribe infor to server
+//
+//                    $current_lifetime_value -=$item['price'];
+//                    $drip_api->add_subscriber( $email,
+//                            array(
+//                                    'lifetime_value' => $current_lifetime_value
+//                            )
+//                    );
+//
+//
+//                    $drip_response = $drip_api->fire_event(
+//                            $email,
+//                            'Refunded',
+//                            array(
+//                                    'value' => (int) $item['price'],
+//                                    'product_name' => $item['name'],
+//                                    'price_name' => edd_get_cart_item_price_name( $item )
+//                            )
+//                    );
+//	                EDD_Drip_Logging::debug(__METHOD__,'Drip refunded event response:'. var_export($drip_response,true));
+//                }
+//            } elseif ($new_status == 'abandoned') {
+//
+//                $payment = get_post( $payment_id );
+//                $time_make_payment = strtotime($payment->post_date) ;
+//                // if the payment was existed over 30mins , no need to do any thing
+//                if( time() - $time_make_payment > 1800 ) {
+//                    return;
+//                }
+//
+//                $infor = $this->get_infor_by_payment_id($payment_id);
+//                $email = $infor['email'];
+//                //get all item in the cart
+//                $cart_items = $infor['cart_items'];
+//
+//                foreach ($cart_items as $item) {
+//
+//                    $drip_response = $drip_api->fire_event(
+//                            $email,
+//                            'Abandoned cart',
+//                            array(
+//                                    'value' => (int) $item['price'],
+//                                    'product_name' => $item['name'],
+//                                    'price_name' => edd_get_cart_item_price_name( $item )
+//                            )
+//                    );
+//
+//	                EDD_Drip_Logging::debug(__METHOD__,'Drip Abandoned Cart Event Response:'. var_export($drip_response,true));
+//                }
+//            }
             
         }
-        
-       /**
-        *  get_infor_by_payment_id
-        * @param type $payment_id
-        * @return type
-        */
-       function get_infor_by_payment_id ( $payment_id ) {
 
-             $meta = get_post_meta( $payment_id,
-                        '_edd_payment_meta',
-                        true );
+	    /**
+	     *  Get Payment Information by Payment ID
+	     *
+	     * @param $payment_id
+	     *
+	     * @return mixed
+	     */
+       function get_payment_info_by_payment_id ( $payment_id ) {
 
-              $user_infor = $meta['user_info'];
-              $infor['email'] = $user_infor['email'];
-              $infor['first_name'] = $user_infor['first_name'];
-              $infor['name'] = $user_infor['first_name'] . ' ' . $user_infor['last_name'];
-              //get all item in the cart
-              $infor['cart_items'] = $meta['cart_details'];
-              $infor['is_renewal'] = (bool) get_post_meta( $payment_id, '_edd_sl_is_renewal', true );
+			$meta = get_post_meta( $payment_id,
+			        '_edd_payment_meta',
+			        true );
+			EDD_Drip_Logging::debug(__METHOD__,'Payment Info:' .var_export($meta,true));
 
-           return $infor;
+			$user_infor = $meta['user_info'];
+			$infor['email'] = $user_infor['email'];
+			$infor['first_name'] = $user_infor['first_name'];
+			$infor['name'] = $user_infor['first_name'] . ' ' . $user_infor['last_name'];
+			//get all item in the cart
+			$infor['cart_items'] = $meta['cart_details'];
+			$infor['is_renewal'] = (bool) get_post_meta( $payment_id, '_edd_sl_is_renewal', true );
+
+			return $infor;
        } 
         
       /**
@@ -497,7 +593,7 @@ if (!class_exists( 'EDD_Drip' )) {
            foreach ($payments as $payment) {
                 // push subscribe infor to server
                 $drip_api = EDDDripApi::getInstance();
-                $infor = $this->get_infor_by_payment_id($payment->ID);
+                $infor = $this->get_payment_info_by_payment_id($payment->ID);
                 $email = $infor['email'];
                 //get all item in the cart
                 $cart_items = $infor['cart_items'];
@@ -527,6 +623,7 @@ if (!class_exists( 'EDD_Drip' )) {
  * @return      EDD_Drip The one true EDD_Drip
  */
 function EDD_Drip_load() {
+
     if (!class_exists( 'Easy_Digital_Downloads' )) {
         if (!class_exists( 'EDD_Extension_Activation' )) {
             require_once 'includes/class.extension-activation.php';
@@ -538,7 +635,6 @@ function EDD_Drip_load() {
         return EDD_Drip::instance();
     }    
 }
-
 add_action( 'plugins_loaded', 'EDD_Drip_load' );
 
 // Check if EDD plugin is activated
@@ -553,5 +649,4 @@ if (in_array('easy-digital-downloads/easy-digital-downloads.php', get_option('ac
      * On deactivation, remove all functions from the scheduled action hook.
      */
    register_deactivation_hook( __FILE__, array( EDD_Drip::instance(), 'edd_drip_deactivation' ) );
-
 }
