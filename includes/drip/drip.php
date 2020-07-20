@@ -94,6 +94,40 @@ class EDDDripApi {
                         $payload );
     }
 
+
+	/**
+	 * Tag subscriber
+	 *
+	 * @param string $email
+	 * @param string $tag
+	 *
+	 * @return mixed
+	 * @throws Exception
+	 */
+	function tag_subscriber($email,$tag) {
+		$url = sprintf( '/%s/tags', $this->api_account_id );
+
+		if (empty($email)) {
+			throw new Exception("Subscriber email was not specified");
+		}
+
+		if (empty($tag)) {
+			throw new Exception("Tag was not specified");
+		}
+
+		$payload = array(
+			'tags' => array(
+				array(
+					'email' => $email,
+					'tag' => $tag
+				)
+			)
+		);
+
+		return $this->execute_query( $url, $payload );
+
+	}
+
     function get_all_lists() {
 
         $url = sprintf( '/%s/campaigns',

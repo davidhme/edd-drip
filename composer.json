@@ -1,0 +1,12 @@
+{
+    "require": {
+        "monolog/monolog": "1.23.0"
+    },
+    "autoload"   : {
+        "classmap": [
+            "includes/drip/drip.php",
+            "includes/edd-drip-logging.php"
+        ]
+    }
+}
+
